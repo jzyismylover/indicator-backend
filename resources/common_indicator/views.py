@@ -216,8 +216,8 @@ class DescriptivityValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
 
-        verb_words = handler.get_verb_words()
-        adjective_words = handler.get_adjective_words()
+        verb_words = len(handler.get_verb_words())
+        adjective_words = len(handler.get_adjective_words())
 
         descriptivity = adjective_words / (verb_words + adjective_words)
 
