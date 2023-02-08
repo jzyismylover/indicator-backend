@@ -10,6 +10,7 @@ parser.add_argument('lg_type', type=str, required=True, location='form')
 parser.add_argument('lg_text', type=str, required=True, location='form')
 
 OUTPUT_FIELDS = {
+    'type': fields.String,
     'value': fields.Float,
 }
 
@@ -32,17 +33,17 @@ def getParams(parser) -> Base_Utils:
 
 
 def getLanguageHandler(lg_type, lg_text, *, hash_value=''):
-    # handler = get_dyn_data(hash_value)
-    # if handler == None:
-    # handler = LANGUAGE_HANDLER_MAPPER[lg_type]
-    # mark_dyn_data(hash_value, handler)
+    handler = get_dyn_data(hash_value)
+    if handler == None:
+        handler = LANGUAGE_HANDLER_MAPPER[lg_type]
+        mark_dyn_data(hash_value, handler)
     handler = LANGUAGE_HANDLER_MAPPER[lg_type]
     return handler(lg_text)
 
 
-def handleIndicatorReturn(*, value, fields=OUTPUT_FIELDS):
+def handleIndicatorReturn(*, value, type, fields=OUTPUT_FIELDS):
     if fields == OUTPUT_FIELDS:
-        data = {'value': value}
+        data = {'value': value, 'type': type}
     else:
         data = {x: value[x] for x in value.keys()}
     return marshal(data=data, fields=fields, envelope='data')
@@ -87,7 +88,7 @@ class TTRValue(Resource):
         print(handler.frequency, handler.words)
         ans = len(handler.frequency) / len(handler.words)
 
-        return handleIndicatorReturn(value='{:.2f}'.format(ans))
+        return handleIndicatorReturn(value='{:.2f}'.format(ans), type='TTR 指标')
 
 
 class HPoint(Resource):
@@ -97,7 +98,7 @@ class HPoint(Resource):
         if handler.h_value == 0:
             handler.get_h_value()
 
-        return handleIndicatorReturn(value=handler.h_value)
+        return handleIndicatorReturn(value=handler.h_value, type='Hpoint 指标')
 
 
 class EntropyValue(Resource):
@@ -110,7 +111,7 @@ class EntropyValue(Resource):
             rate = num / N
             H += rate * math.log2(rate)
 
-        return handleIndicatorReturn(value=H)
+        return handleIndicatorReturn(value=H, type='Entropy 熵')
 
 
 """
@@ -137,7 +138,7 @@ class R1Value(Resource):
         Fh_ = Fh - (h**2) / (2 * N)
         R1 = 1 - Fh_
 
-        return handleIndicatorReturn(value=R1)
+        return handleIndicatorReturn(value=R1, type='词汇丰富度')
 
 
 class RRValue(Resource):
@@ -145,7 +146,7 @@ class RRValue(Resource):
         handler = getParams(parser=parser)
 
         RR = getRRValue(words=handler.words, frequency=handler.frequency)
-        return handleIndicatorReturn(value=RR)
+        return handleIndicatorReturn(value=RR, type='重复率')
 
 
 class RRmcValue(Resource):
@@ -156,7 +157,7 @@ class RRmcValue(Resource):
         V = len(handler.frequency)
         RRmc = (1 - math.sqrt(RR)) / (1 - 1 / math.sqrt(V))
 
-        return handleIndicatorReturn(value=RRmc)
+        return handleIndicatorReturn(value=RRmc, type='相对重复率')
 
 
 class TCValue(Resource):
@@ -178,7 +179,7 @@ class TCValue(Resource):
                 Tr += ((h - (i + 1)) * fr) / (h * (h - 1) * f[0])
         Tr = Tr * 2
 
-        return handleIndicatorReturn(value=Tr)
+        return handleIndicatorReturn(value=Tr, type='主题集中度')
 
 
 class SecondaryTCValue(Resource):
@@ -198,7 +199,7 @@ class SecondaryTCValue(Resource):
                 fr = f[i - 1]
                 Tr += ((h - i) * fr) / (h * (h - 1) * f[0])
 
-        return handleIndicatorReturn(value=Tr)
+        return handleIndicatorReturn(value=Tr, type='次级主题集中度')
 
 
 class ActivityValue(Resource):
@@ -209,7 +210,7 @@ class ActivityValue(Resource):
         adjective_words = len(handler.get_adjective_words())
         activity = verb_words / (verb_words + adjective_words)
 
-        return handleIndicatorReturn(value=activity)
+        return handleIndicatorReturn(value=activity, type='活动度')
 
 
 class DescriptivityValue(Resource):
@@ -221,7 +222,7 @@ class DescriptivityValue(Resource):
 
         descriptivity = adjective_words / (verb_words + adjective_words)
 
-        return handleIndicatorReturn(value=descriptivity)
+        return handleIndicatorReturn(value=descriptivity, type='描写度')
 
 
 class LValue(Resource):
@@ -229,7 +230,7 @@ class LValue(Resource):
         handler = getParams(parser=parser)
         L = getLValue(frequency=handler.frequency)
 
-        return handleIndicatorReturn(value=L)
+        return handleIndicatorReturn(value=L, type='秩序分布欧氏距离')
 
 
 class CurveLengthValue(Resource):
@@ -250,7 +251,7 @@ class CurveLengthValue(Resource):
 
         R = 1 - LR / L
 
-        return handleIndicatorReturn(value=R)
+        return handleIndicatorReturn(value=R, type='秩序分布 R 指数')
 
 
 class LambdaValue(Resource):
@@ -261,7 +262,7 @@ class LambdaValue(Resource):
 
         Lambda_v = (L * math.log10(N)) / N
 
-        return handleIndicatorReturn(value=Lambda_v)
+        return handleIndicatorReturn(value=Lambda_v, type='lambda 值')
 
 
 class AdjustedModuleValue(Resource):
@@ -279,7 +280,7 @@ class AdjustedModuleValue(Resource):
 
         A = M / math.log10(N)
 
-        return handleIndicatorReturn(value=A)
+        return handleIndicatorReturn(value=A, type='校正模数')
 
 
 class GiniValue(Resource):
@@ -291,7 +292,7 @@ class GiniValue(Resource):
         f = handler.frequency
         G = getGiniValue(V=V, N=N, frequency=f)
 
-        return handleIndicatorReturn(value=G)
+        return handleIndicatorReturn(value=G, type='基尼系数')
 
 
 class R4Value(Resource):
@@ -304,7 +305,7 @@ class R4Value(Resource):
         G = getGiniValue(V=V, N=N, frequency=f)
         R4 = 1 - G
 
-        return handleIndicatorReturn(value=R4)
+        return handleIndicatorReturn(value=R4, type='R4')
 
 
 class HapaxValue(Resource):
@@ -314,7 +315,7 @@ class HapaxValue(Resource):
         N = len(handler.words)
         hpaxRate = len(handler.hapax) / N
 
-        return handleIndicatorReturn(value=hpaxRate)
+        return handleIndicatorReturn(value=hpaxRate, type='单现词占比')
 
 
 class WriterView(Resource):
@@ -339,7 +340,7 @@ class WriterView(Resource):
 
         cosa = t1 / (t2 * t3)
 
-        return handleIndicatorReturn(value=cosa)
+        return handleIndicatorReturn(value=cosa, type='作者视野')
 
 
 class VerbDistance(Resource):
@@ -354,12 +355,12 @@ class VerbDistance(Resource):
         for i, tag in enumerate(tags):
             if handler.is_verb_word(tag):
                 verb_idx_list.append(i)
-        
+
         for i in range(0, len(verb_idx_list) - 1):
             verb_V += verb_idx_list[i + 1] - verb_idx_list[i]
         verb_V = verb_V / (len(verb_idx_list) - 1)
 
-        return handleIndicatorReturn(value=verb_V)
+        return handleIndicatorReturn(value=verb_V, type='动词间距')
 
 
 class ZipfTest(Resource):
@@ -384,4 +385,4 @@ class ZipfTest(Resource):
                     break
 
         current_fields = {str(x): fields.Float for x in zipf.keys()}
-        return handleIndicatorReturn(value=zipf, fields=current_fields)
+        return handleIndicatorReturn(value=zipf, fields=current_fields, type='齐普夫校验')
