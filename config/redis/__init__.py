@@ -4,13 +4,12 @@ import os
 from flask_redis import FlaskRedis
 from flask_restful import abort
 
-ROOt_DIR = os.path.abspath('.')
 def init_redis(*, app) -> FlaskRedis:
-    if os.path.exists(os.path.join(ROOt_DIR, '.dockerenv')):
+    if os.path.exists('/.dockerenv'):
         redis_path = 'redis://redis:6379'
     else:
         redis_path = 'redis://:jzy@localhost:6379'
-    app.config['REDIS_URL'] = 'redis://redis:6379'
+    app.config['REDIS_URL'] = redis_path
     return FlaskRedis(app)
 
 KEY = 'indicator%'
