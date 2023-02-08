@@ -1,11 +1,10 @@
-from flask_restful import Resource, fields, marshal_with, request, reqparse, marshal
+from flask_restful import Resource, fields, request, reqparse, marshal
 import langid
 import pdfplumber
 import docx
 import os
 
-helper_text = None
-lan_mapper = {}
+LAN_MAPPER = {}
 with open(
     file=os.path.abspath(path=os.path.join('static', 'language.txt')),
     mode='r',
@@ -13,7 +12,7 @@ with open(
 ) as f:
     for item in f.readlines():
         lan_type, lan_name = str(item).split(' ')
-        lan_mapper[lan_type] = lan_name.replace('\n', '')
+        LAN_MAPPER[lan_type] = lan_name.replace('\n', '')
 
 fields_dict = {
     'lg_type': fields.String,
@@ -29,7 +28,10 @@ class LanguageRec(Resource):
         self.parser.add_argument('file', type=str, location='files')
 
     def return_lg_type(self, ans, text):
-        dic = {'lg_type': ans, 'lg_name': lan_mapper[ans], 'lg_text': text}
+        lg_name = ''
+        if ans in LAN_MAPPER:
+            lg_name = LAN_MAPPER[ans]
+        dic = {'lg_type': ans, 'lg_name': lg_name, 'lg_text': text}
         return marshal(dic, fields_dict, envelope='data')
 
     def parse_pdf_file(self, file):
@@ -53,7 +55,7 @@ class LanguageRec(Resource):
         """
         markdown. txt
         """
-        return bytes(file.read()).decode()
+        return bytes(file.read()).decode().replace('\n', '').strip()
 
     def post(self):
         text = self.parser.parse_args()['text']
@@ -69,5 +71,4 @@ class LanguageRec(Resource):
             else:
                 content = self.parse_ordinary_file(file)
 
-            content = content.replace('\n', '').replace(' ', '')
             return self.return_lg_type(langid.classify(content[0:1000])[0], content)
