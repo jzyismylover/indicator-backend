@@ -1,9 +1,9 @@
-import pickle
 import math
 import hashlib
 from flask_restful import Resource, reqparse, fields, marshal
 from utils import EN_Utils, ZH_Utils, Base_Utils
 from config import get_dyn_data, mark_dyn_data
+from resources.common_indicator.util import *
 
 parser = reqparse.RequestParser()
 parser.add_argument('lg_type', type=str, required=True, location='form')
@@ -49,34 +49,6 @@ def handleIndicatorReturn(*, value, type, fields=OUTPUT_FIELDS):
     return marshal(data=data, fields=fields, envelope='data')
 
 
-def getRRValue(*, words, frequency):
-    N = len(words)
-    RR = 0
-    for num in frequency:
-        RR += (num / N) ** 2
-
-    return RR
-
-
-def getLValue(*, frequency):
-    L = 0
-    for i in range(0, len(frequency) - 1):
-        distance = (frequency[i] - frequency[i + 1]) ** 2
-        L += math.sqrt(distance + 1)
-
-    return L
-
-
-def getGiniValue(*, N, V, frequency: list):
-    c1 = 0
-    for i, num in enumerate(frequency):
-        c1 += (i + 1) * num
-    c1 = 2 * c1 / N
-    G = (V + 1 - c1) / V
-
-    return G
-
-
 """
 具体指标计算视图
 """
@@ -85,10 +57,9 @@ def getGiniValue(*, N, V, frequency: list):
 class TTRValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        print(handler.frequency, handler.words)
-        ans = len(handler.frequency) / len(handler.words)
+        ans = getTTRValue(frequency=handler.frequency, words=handler.words)
 
-        return handleIndicatorReturn(value='{:.2f}'.format(ans), type='TTR 指标')
+        return handleIndicatorReturn(value=ans, type='TTR')
 
 
 class HPoint(Resource):
@@ -98,20 +69,15 @@ class HPoint(Resource):
         if handler.h_value == 0:
             handler.get_h_value()
 
-        return handleIndicatorReturn(value=handler.h_value, type='Hpoint 指标')
+        return handleIndicatorReturn(value=handler.h_value, type='Hpoint')
 
 
 class EntropyValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        N = len(handler.words)
-        H = 0
+        H = getEntroyValue(frequency=handler.frequency, words=handler.words)
 
-        for num in handler.frequency:
-            rate = num / N
-            H += rate * math.log2(rate)
-
-        return handleIndicatorReturn(value=H, type='Entropy 熵')
+        return handleIndicatorReturn(value=H, type='Entropy')
 
 
 """
@@ -125,20 +91,11 @@ class R1Value(Resource):
         if handler.h_value == 0:
             handler.get_h_value()
 
-        N = len(handler.words)
-        h = handler.h_value
-        t = 0
-        for i, num in enumerate(handler.frequency):
-            if (i + 1) > h:
-                break
-            t += num
+        R1 = getR1Value(
+            frequency=handler.frequency, words=handler.words, h_value=handler.h_value
+        )
 
-        Fh = t / N
-        h = handler.h_value
-        Fh_ = Fh - (h**2) / (2 * N)
-        R1 = 1 - Fh_
-
-        return handleIndicatorReturn(value=R1, type='词汇丰富度')
+        return handleIndicatorReturn(value=R1, type='R1')
 
 
 class RRValue(Resource):
@@ -146,18 +103,16 @@ class RRValue(Resource):
         handler = getParams(parser=parser)
 
         RR = getRRValue(words=handler.words, frequency=handler.frequency)
-        return handleIndicatorReturn(value=RR, type='重复率')
+        return handleIndicatorReturn(value=RR, type='RR')
 
 
 class RRmcValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
 
-        RR = getRRValue(words=handler.words, frequency=handler.frequency)
-        V = len(handler.frequency)
-        RRmc = (1 - math.sqrt(RR)) / (1 - 1 / math.sqrt(V))
+        RRmc = getRRmcValue(frequency=handler.frequency, words=handler.words)
 
-        return handleIndicatorReturn(value=RRmc, type='相对重复率')
+        return handleIndicatorReturn(value=RRmc, type='RRmc')
 
 
 class TCValue(Resource):
@@ -168,18 +123,14 @@ class TCValue(Resource):
         if handler.h_value == 0:
             handler.get_h_value()
 
-        Tr = 0
-        h = handler.h_value
-        f = handler.frequency
-        for i, fr in enumerate(f):
-            if i + 1 > h:
-                break
-            word = handler.frequency_words[i]
-            if handler.real_words.count(word) != 0:
-                Tr += ((h - (i + 1)) * fr) / (h * (h - 1) * f[0])
-        Tr = Tr * 2
+        Tr = getTCValue(
+            frequency=handler.frequency,
+            h_value=handler.h_value,
+            frequency_words=handler.frequency_words,
+            real_words=handler.real_words,
+        )
 
-        return handleIndicatorReturn(value=Tr, type='主题集中度')
+        return handleIndicatorReturn(value=Tr, type='TC')
 
 
 class SecondaryTCValue(Resource):
@@ -190,39 +141,40 @@ class SecondaryTCValue(Resource):
         if handler.h_value == 0:
             handler.get_h_value()
 
-        Tr = 0
-        h = handler.h_value
-        f = handler.frequency
-        for i in range(math.ceil(h), math.floor(2 * h) + 1):
-            word = handler.frequency_words[i - 1]
-            if handler.real_words.count(word) != 0:
-                fr = f[i - 1]
-                Tr += ((h - i) * fr) / (h * (h - 1) * f[0])
+        Tr = getSecondTCValue(
+            frequency=handler.frequency,
+            h_value=handler.h_value,
+            frequency_words=handler.frequency_words,
+            real_words=handler.real_words,
+        )
 
-        return handleIndicatorReturn(value=Tr, type='次级主题集中度')
+        return handleIndicatorReturn(value=Tr, type='Secondary')
 
 
 class ActivityValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
 
-        verb_words = len(handler.get_verb_words())
-        adjective_words = len(handler.get_adjective_words())
-        activity = verb_words / (verb_words + adjective_words)
+        verb_words = handler.get_verb_words()
+        adjective_words = handler.get_adjective_words()
+        activity = getAcitvityValue(
+            verb_words=verb_words, adjective_words=adjective_words
+        )
 
-        return handleIndicatorReturn(value=activity, type='活动度')
+        return handleIndicatorReturn(value=activity, type='Activity')
 
 
 class DescriptivityValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
 
-        verb_words = len(handler.get_verb_words())
-        adjective_words = len(handler.get_adjective_words())
+        verb_words = handler.get_verb_words()
+        adjective_words = handler.get_adjective_words()
+        descriptivity = getDescriptivityValue(
+            verb_words=verb_words, adjective_words=adjective_words
+        )
 
-        descriptivity = adjective_words / (verb_words + adjective_words)
-
-        return handleIndicatorReturn(value=descriptivity, type='描写度')
+        return handleIndicatorReturn(value=descriptivity, type='Descriptivity')
 
 
 class LValue(Resource):
@@ -230,7 +182,7 @@ class LValue(Resource):
         handler = getParams(parser=parser)
         L = getLValue(frequency=handler.frequency)
 
-        return handleIndicatorReturn(value=L, type='秩序分布欧氏距离')
+        return handleIndicatorReturn(value=L, type='L')
 
 
 class CurveLengthValue(Resource):
@@ -241,28 +193,17 @@ class CurveLengthValue(Resource):
 
         f = handler.frequency
         h = handler.h_value
-        LR = 0
-        L = 0
-        for i in range(0, len(f) - 1):
-            distance = (f[i] - f[i + 1]) ** 2
-            if i + 1 < h:
-                LR += math.sqrt(distance + 1)
-            L += math.sqrt(distance + 1)
+        R = getCurveLengthValue(frequency=f, h_value=h)
 
-        R = 1 - LR / L
-
-        return handleIndicatorReturn(value=R, type='秩序分布 R 指数')
+        return handleIndicatorReturn(value=R, type='Curve Length R Index')
 
 
 class LambdaValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        L = getLValue(frequency=handler.frequency)
-        N = len(handler.words)
+        lambda_v = getLambdaValue(frequency=handler.frequency, words=handler.words)
 
-        Lambda_v = (L * math.log10(N)) / N
-
-        return handleIndicatorReturn(value=Lambda_v, type='lambda 值')
+        return handleIndicatorReturn(value=lambda_v, type='lambda')
 
 
 class AdjustedModuleValue(Resource):
@@ -280,30 +221,22 @@ class AdjustedModuleValue(Resource):
 
         A = M / math.log10(N)
 
-        return handleIndicatorReturn(value=A, type='校正模数')
+        return handleIndicatorReturn(value=A, type='Adjusted Modules')
 
 
 class GiniValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
+        G = getGiniValue(frequency=handler.frequency, words=handler.words)
 
-        V = len(handler.frequency)
-        N = len(handler.words)
-        f = handler.frequency
-        G = getGiniValue(V=V, N=N, frequency=f)
-
-        return handleIndicatorReturn(value=G, type='基尼系数')
+        return handleIndicatorReturn(value=G, type='G')
 
 
 class R4Value(Resource):
     def post(self):
         handler = getParams(parser=parser)
 
-        V = len(handler.frequency)
-        N = len(handler.words)
-        f = handler.frequency
-        G = getGiniValue(V=V, N=N, frequency=f)
-        R4 = 1 - G
+        R4 = getR4Value(frequency=handler.frequency, words=handler.words)
 
         return handleIndicatorReturn(value=R4, type='R4')
 
@@ -312,10 +245,9 @@ class HapaxValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
 
-        N = len(handler.words)
-        hpaxRate = len(handler.hapax) / N
+        rate = getHapaxValue(words=handler.words, hapax=handler.hapax)
 
-        return handleIndicatorReturn(value=hpaxRate, type='单现词占比')
+        return handleIndicatorReturn(value=rate, type='Hapax Percentage')
 
 
 class WriterView(Resource):
@@ -324,23 +256,9 @@ class WriterView(Resource):
         if handler.h_value == 0:
             handler.get_h_value()
 
-        h = handler.h_value
-        f = handler.frequency
-        V = len(handler.frequency)
-        f1 = f[0]
+        cosa = getWriterView(frequency=handler.frequency, h_value=handler.h_value)
 
-        r1 = h - 1
-        r2 = f1 - h
-        r3 = h - 1
-        r4 = V - h
-
-        t1 = -(r1 * r2 + r3 * r4)
-        t2 = math.sqrt(r1**2 + r2**2)
-        t3 = math.sqrt(r3**2 + r4**2)
-
-        cosa = t1 / (t2 * t3)
-
-        return handleIndicatorReturn(value=cosa, type='作者视野')
+        return handleIndicatorReturn(value=cosa, type='Writer\'s View')
 
 
 class VerbDistance(Resource):
@@ -350,39 +268,80 @@ class VerbDistance(Resource):
             handler.get_word_character()
 
         tags = handler.tags
-        verb_V = 0
-        verb_idx_list = []
-        for i, tag in enumerate(tags):
-            if handler.is_verb_word(tag):
-                verb_idx_list.append(i)
+        verb_V = getVerbDistance(tags=handler.tags, is_verb_word=handler.is_verb_word)
 
-        for i in range(0, len(verb_idx_list) - 1):
-            verb_V += verb_idx_list[i + 1] - verb_idx_list[i]
-        verb_V = verb_V / (len(verb_idx_list) - 1)
-
-        return handleIndicatorReturn(value=verb_V, type='动词间距')
+        return handleIndicatorReturn(value=verb_V, type='Verb Distances')
 
 
 class ZipfTest(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        f = handler.frequency
-        freq_words = handler.frequency_words
 
-        ll = 0
-        tword = f[0]
-        zipf = dict()
-        avg = 0
-        for i, num in enumerate(f):
-            if num == tword:
-                avg += i + 1
-            else:
-                zipf[freq_words[i - 1]] = tword * avg / (i - ll)
-                ll = i
-                avg = ll + 1
-                tword = num
-                if tword == 1:
-                    break
+        zipf = getZipf(
+            frequency=handler.frequency, frequency_words=handler.frequency_words
+        )
 
         current_fields = {str(x): fields.Float for x in zipf.keys()}
-        return handleIndicatorReturn(value=zipf, fields=current_fields, type='齐普夫校验')
+        return handleIndicatorReturn(
+            value=zipf, fields=current_fields, type='Zipf Test'
+        )
+
+
+class ALLCommonIndicator(Resource):
+    def post(self):
+        handler = getParams(parser=parser)
+        if len(handler.real_words) == 0:
+            handler.get_real_words()
+        if handler.h_value == 0:
+            handler.get_h_value()
+
+        f = handler.frequency
+        w = handler.words
+        h = handler.h_value
+        verb_words = handler.get_verb_words()
+        adjective_words = handler.get_adjective_words()
+
+        RR = getRRValue(frequency=f, words=w)
+        Activity = getAcitvityValue(
+            verb_words=verb_words, adjective_words=adjective_words
+        )
+        L = getLValue(frequency=f)
+        G = getGiniValue(frequency=f, words=w)
+
+        return {
+            'data': {
+                'TTR': getTTRValue(frequency=f, words=w),
+                'HPoint': h,
+                'Entropy': getEntroyValue(frequency=f, words=w),
+                'R1': getR1Value(frequency=f, words=w, h_value=h),
+                'RR': getRRValue(frequency=f, words=w),
+                'RRmc': getRRmcValue(frequency=f, words=w, RR=RR),
+                'TC': getTCValue(
+                    frequency=f, 
+                    real_words=handler.real_words,
+                    h_value=h,
+                    frequency_words=handler.frequency_words
+                ),
+                'SecondTc': getSecondTCValue(
+                    frequency=f, 
+                    real_words=handler.real_words,
+                    h_value=h,
+                    frequency_words=handler.frequency_words
+                ),
+                'Activity': Activity,
+                'Descriptivity': 1 - Activity,
+                'L': getLValue(frequency=f),
+                'Curver Length R Index': getCurveLengthValue(frequency=f, h_value=h),
+                'Lambda': getLambdaValue(frequency=f, words=w, L=L),
+                'G': G,
+                'R4': 1 - G,
+                'Hapax Percentage': getHapaxValue(words=w, hapax=handler.hapax),
+                'Writer\'s View': getWriterView(frequency=f, h_value=h),
+                'Verb Distances': getVerbDistance(
+                    tags=handler.tags, is_verb_word=handler.is_verb_word
+                ),
+                'Zipf Test': getZipf(
+                    frequency=f, frequency_words=handler.frequency_words
+                ),
+            }
+        }

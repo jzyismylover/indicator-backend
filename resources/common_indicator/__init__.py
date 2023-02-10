@@ -20,7 +20,8 @@ from resources.common_indicator.views import (
     RRmcValue,
     RRValue,
     SecondaryTCValue,
-    ZipfTest
+    ZipfTest,
+    ALLCommonIndicator
 )
 
 common_indicator = Blueprint('common', __name__, url_prefix='/common')
@@ -48,3 +49,4 @@ common_api.add_resource(HapaxValue, '/hapax')
 common_api.add_resource(WriterView, '/writerView')
 common_api.add_resource(VerbDistance, '/verbDistance')
 common_api.add_resource(ZipfTest, '/zipf')
+common_api.add_resource(ALLCommonIndicator, '/all')
