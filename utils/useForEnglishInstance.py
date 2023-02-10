@@ -1,4 +1,5 @@
 import re
+from nltk.tokenize import sent_tokenize
 from nltk import pos_tag, word_tokenize
 from utils.useForFactory import Base_Utils
 
@@ -7,26 +8,29 @@ SPECIAL_CHARS = ['.', ',', '!', '?']
 class EN_Utils(Base_Utils):
     def __init__(self, text: str) -> None:
         self.text = text
-        self.words = self.get_words(text)
+        self.sentences = sent_tokenize(text)
+        self.words = self.get_words()
         self.hapax = []  # 单现词
-        self.frequency_words = []
-        self.frequency = self.get_word_frequency()
+        self.frequency_words = [] # 单词排序列表
+        self.frequency = self.get_word_frequency() # 单词数量排序列表
         self.tags = []
         self.real_words = []
         self.h_value = 0
 
-    def get_words(self, text):
-        words = []
-        words = word_tokenize(text)
-        filtered_words = []
-        for word in words:
-            if re.search('[a-zA-Z0-9]', word) is None:
-                pass
-            else:
-                new_word = word.replace(",", "").replace(".", "").replace(";", "")
-                new_word = new_word.replace("!", "").replace("?", "").replace("\'", "")
-                filtered_words.append(new_word.lower())
-        return filtered_words
+    def get_words(self):
+        all_words = []
+        for sentence in self.sentences:
+            words = word_tokenize(sentence)
+            filtered_words = []
+            for word in words:
+                if re.search('[a-zA-Z0-9]', word) is None:
+                    pass
+                else:
+                    new_word = word.replace(",", "").replace(".", "").replace(";", "")
+                    new_word = new_word.replace("!", "").replace("?", "").replace("\'", "")
+                    filtered_words.append(new_word.lower())
+            all_words.extend(filtered_words)
+        return all_words
 
     def get_word_frequency(self) -> dict:
         frequency = []

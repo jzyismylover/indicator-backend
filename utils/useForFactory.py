@@ -3,6 +3,7 @@ import abc
 
 class Base_Utils(object):
     def __init__(self) -> None:
+        self.sentences = []
         self.words = []
         self.frequency = []
         self.h_value = 0
