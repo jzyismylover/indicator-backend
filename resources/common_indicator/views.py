@@ -1,20 +1,12 @@
 import math
 import hashlib
 from flask_restful import Resource, reqparse, fields, marshal
-from utils import EN_Utils, ZH_Utils, Base_Utils
 from config import get_dyn_data, mark_dyn_data
 from resources.common_indicator.util import *
 
 parser = reqparse.RequestParser()
 parser.add_argument('lg_type', type=str, required=True, location='form')
 parser.add_argument('lg_text', type=str, required=True, location='form')
-
-OUTPUT_FIELDS = {
-    'type': fields.String,
-    'value': fields.Float,
-}
-
-LANGUAGE_HANDLER_MAPPER = {'en': EN_Utils, 'zh': ZH_Utils}
 
 
 def generateHash(text: str):
@@ -23,30 +15,32 @@ def generateHash(text: str):
     return hash_model.hexdigest()
 
 
-def getParams(parser) -> Base_Utils:
+def getParams(parser) -> CommonIndicatorHandler:
     params = parser.parse_args()
     lg_type = params['lg_type']
     lg_text = params['lg_text']
     hash_value = generateHash(lg_type + lg_text)
-    handler = getLanguageHandler(lg_type, lg_text, hash_value=hash_value)
+    handler = getLanguageHandler(lg_text, lg_type, hash_value=hash_value)
     return handler
 
 
-def getLanguageHandler(lg_type, lg_text, *, hash_value=''):
-    handler = get_dyn_data(hash_value)
-    if handler == None:
-        handler = LANGUAGE_HANDLER_MAPPER[lg_type]
-        mark_dyn_data(hash_value, handler)
-    handler = LANGUAGE_HANDLER_MAPPER[lg_type]
-    return handler(lg_text)
+def getLanguageHandler(lg_text, lg_type, *, hash_value=''):
+    try:
+        handler = get_dyn_data(hash_value)
+        if handler == None:
+            handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
+            mark_dyn_data(hash_value, handler)
+    except Exception as e:
+        handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
+    return handler
 
 
-def handleIndicatorReturn(*, value, type, fields=OUTPUT_FIELDS):
-    if fields == OUTPUT_FIELDS:
-        data = {'value': value, 'type': type}
-    else:
-        data = {x: value[x] for x in value.keys()}
-    return marshal(data=data, fields=fields, envelope='data')
+def handleIndicatorReturn(**kargs):
+    return {
+        'data': {
+            kargs['type']: kargs['value']
+        }
+    }
 
 
 """
@@ -57,7 +51,7 @@ def handleIndicatorReturn(*, value, type, fields=OUTPUT_FIELDS):
 class TTRValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        ans = getTTRValue(frequency=handler.frequency, words=handler.words)
+        ans = handler.getTTRValue()
 
         return handleIndicatorReturn(value=ans, type='TTR')
 
@@ -65,17 +59,15 @@ class TTRValue(Resource):
 class HPoint(Resource):
     def post(self):
         handler = getParams(parser=parser)
+        h_point = handler.getHPoint()
 
-        if handler.h_value == 0:
-            handler.get_h_value()
-
-        return handleIndicatorReturn(value=handler.h_value, type='Hpoint')
+        return handleIndicatorReturn(value=h_point, type='Hpoint')
 
 
 class EntropyValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        H = getEntroyValue(frequency=handler.frequency, words=handler.words)
+        H = handler.getEntroyValue()
 
         return handleIndicatorReturn(value=H, type='Entropy')
 
@@ -88,12 +80,7 @@ class EntropyValue(Resource):
 class R1Value(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        if handler.h_value == 0:
-            handler.get_h_value()
-
-        R1 = getR1Value(
-            frequency=handler.frequency, words=handler.words, h_value=handler.h_value
-        )
+        R1 = handler.getR1Value()
 
         return handleIndicatorReturn(value=R1, type='R1')
 
@@ -101,16 +88,15 @@ class R1Value(Resource):
 class RRValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
+        RR = handler.getRRValue()
 
-        RR = getRRValue(words=handler.words, frequency=handler.frequency)
         return handleIndicatorReturn(value=RR, type='RR')
 
 
 class RRmcValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-
-        RRmc = getRRmcValue(frequency=handler.frequency, words=handler.words)
+        RRmc = handler.getRRmcValue()
 
         return handleIndicatorReturn(value=RRmc, type='RRmc')
 
@@ -118,17 +104,7 @@ class RRmcValue(Resource):
 class TCValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        if len(handler.real_words) == 0:
-            handler.get_real_words()
-        if handler.h_value == 0:
-            handler.get_h_value()
-
-        Tr = getTCValue(
-            frequency=handler.frequency,
-            h_value=handler.h_value,
-            frequency_words=handler.frequency_words,
-            real_words=handler.real_words,
-        )
+        Tr = handler.getTCValue()
 
         return handleIndicatorReturn(value=Tr, type='TC')
 
@@ -136,17 +112,7 @@ class TCValue(Resource):
 class SecondaryTCValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        if len(handler.real_words) == 0:
-            handler.get_real_words()
-        if handler.h_value == 0:
-            handler.get_h_value()
-
-        Tr = getSecondTCValue(
-            frequency=handler.frequency,
-            h_value=handler.h_value,
-            frequency_words=handler.frequency_words,
-            real_words=handler.real_words,
-        )
+        Tr = handler.getSecondTCValue()
 
         return handleIndicatorReturn(value=Tr, type='Secondary')
 
@@ -154,12 +120,7 @@ class SecondaryTCValue(Resource):
 class ActivityValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-
-        verb_words = handler.get_verb_words()
-        adjective_words = handler.get_adjective_words()
-        activity = getAcitvityValue(
-            verb_words=verb_words, adjective_words=adjective_words
-        )
+        activity = handler.getAcitvityValue( )
 
         return handleIndicatorReturn(value=activity, type='Activity')
 
@@ -167,12 +128,7 @@ class ActivityValue(Resource):
 class DescriptivityValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-
-        verb_words = handler.get_verb_words()
-        adjective_words = handler.get_adjective_words()
-        descriptivity = getDescriptivityValue(
-            verb_words=verb_words, adjective_words=adjective_words
-        )
+        descriptivity = handler.getDescriptivityValue()
 
         return handleIndicatorReturn(value=descriptivity, type='Descriptivity')
 
@@ -180,7 +136,7 @@ class DescriptivityValue(Resource):
 class LValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        L = getLValue(frequency=handler.frequency)
+        L = handler.getLValue()
 
         return handleIndicatorReturn(value=L, type='L')
 
@@ -188,12 +144,7 @@ class LValue(Resource):
 class CurveLengthValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        if handler.h_value == 0:
-            handler.get_h_value()
-
-        f = handler.frequency
-        h = handler.h_value
-        R = getCurveLengthValue(frequency=f, h_value=h)
+        R = handler.getCurveLengthValue()
 
         return handleIndicatorReturn(value=R, type='Curve Length R Index')
 
@@ -201,7 +152,7 @@ class CurveLengthValue(Resource):
 class LambdaValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        lambda_v = getLambdaValue(frequency=handler.frequency, words=handler.words)
+        lambda_v = handler.getLambdaValue()
 
         return handleIndicatorReturn(value=lambda_v, type='lambda')
 
@@ -209,17 +160,7 @@ class LambdaValue(Resource):
 class AdjustedModuleValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        if handler.h_value == 0:
-            handler.get_h_value()
-
-        h = handler.h_value
-        f = handler.frequency
-        V = len(handler.frequency)
-        N = len(handler.words)
-        f1 = f[0]
-        M = math.sqrt((f1 / h) ** 2 + (V / h) ** 2)
-
-        A = M / math.log10(N)
+        A = handler.getAdjustModuleValue()
 
         return handleIndicatorReturn(value=A, type='Adjusted Modules')
 
@@ -227,7 +168,7 @@ class AdjustedModuleValue(Resource):
 class GiniValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        G = getGiniValue(frequency=handler.frequency, words=handler.words)
+        G = handler.getGiniValue()
 
         return handleIndicatorReturn(value=G, type='G')
 
@@ -235,8 +176,7 @@ class GiniValue(Resource):
 class R4Value(Resource):
     def post(self):
         handler = getParams(parser=parser)
-
-        R4 = getR4Value(frequency=handler.frequency, words=handler.words)
+        R4 = handler.getR4Value()
 
         return handleIndicatorReturn(value=R4, type='R4')
 
@@ -244,8 +184,7 @@ class R4Value(Resource):
 class HapaxValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-
-        rate = getHapaxValue(words=handler.words, hapax=handler.hapax)
+        rate = handler.getHapaxValue()
 
         return handleIndicatorReturn(value=rate, type='Hapax Percentage')
 
@@ -253,10 +192,7 @@ class HapaxValue(Resource):
 class WriterView(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        if handler.h_value == 0:
-            handler.get_h_value()
-
-        cosa = getWriterView(frequency=handler.frequency, h_value=handler.h_value)
+        cosa = handler.getWriterView()
 
         return handleIndicatorReturn(value=cosa, type='Writer\'s View')
 
@@ -264,11 +200,7 @@ class WriterView(Resource):
 class VerbDistance(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        if len(handler.tags) == 0:
-            handler.get_word_character()
-
-        tags = handler.tags
-        verb_V = getVerbDistance(tags=handler.tags, is_verb_word=handler.is_verb_word)
+        verb_V = handler.getVerbDistance()
 
         return handleIndicatorReturn(value=verb_V, type='Verb Distances')
 
@@ -276,12 +208,9 @@ class VerbDistance(Resource):
 class ZipfTest(Resource):
     def post(self):
         handler = getParams(parser=parser)
-
-        zipf = getZipf(
-            frequency=handler.frequency, frequency_words=handler.frequency_words
-        )
-
+        zipf = handler.getZipf()
         current_fields = {str(x): fields.Float for x in zipf.keys()}
+
         return handleIndicatorReturn(
             value=zipf, fields=current_fields, type='Zipf Test'
         )
@@ -290,58 +219,30 @@ class ZipfTest(Resource):
 class ALLCommonIndicator(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        if len(handler.real_words) == 0:
-            handler.get_real_words()
-        if handler.h_value == 0:
-            handler.get_h_value()
-
-        f = handler.frequency
-        w = handler.words
-        h = handler.h_value
-        verb_words = handler.get_verb_words()
-        adjective_words = handler.get_adjective_words()
-
-        RR = getRRValue(frequency=f, words=w)
-        Activity = getAcitvityValue(
-            verb_words=verb_words, adjective_words=adjective_words
-        )
-        L = getLValue(frequency=f)
-        G = getGiniValue(frequency=f, words=w)
+        h = handler.getHPoint()
+        Activity = handler.getAcitvityValue()
+        G = handler.getGiniValue()
 
         return {
             'data': {
-                'TTR': getTTRValue(frequency=f, words=w),
+                'TTR': handler.getTTRValue(),
                 'HPoint': h,
-                'Entropy': getEntroyValue(frequency=f, words=w),
-                'R1': getR1Value(frequency=f, words=w, h_value=h),
-                'RR': getRRValue(frequency=f, words=w),
-                'RRmc': getRRmcValue(frequency=f, words=w, RR=RR),
-                'TC': getTCValue(
-                    frequency=f, 
-                    real_words=handler.real_words,
-                    h_value=h,
-                    frequency_words=handler.frequency_words
-                ),
-                'SecondTc': getSecondTCValue(
-                    frequency=f, 
-                    real_words=handler.real_words,
-                    h_value=h,
-                    frequency_words=handler.frequency_words
-                ),
+                'Entropy': handler.getEntroyValue(),
+                'R1': handler.getR1Value(),
+                'RR': handler.getRRValue(),
+                'RRmc': handler.getRRmcValue(),
+                'TC': handler.getTCValue(),
+                'SecondTc': handler.getSecondTCValue(),
                 'Activity': Activity,
                 'Descriptivity': 1 - Activity,
-                'L': getLValue(frequency=f),
-                'Curver Length R Index': getCurveLengthValue(frequency=f, h_value=h),
-                'Lambda': getLambdaValue(frequency=f, words=w, L=L),
+                'L': handler.getLValue(),
+                'Curver Length R Index': handler.getCurveLengthValue(),
+                'Lambda': handler.getLambdaValue(),
                 'G': G,
                 'R4': 1 - G,
-                'Hapax Percentage': getHapaxValue(words=w, hapax=handler.hapax),
-                'Writer\'s View': getWriterView(frequency=f, h_value=h),
-                'Verb Distances': getVerbDistance(
-                    tags=handler.tags, is_verb_word=handler.is_verb_word
-                ),
-                'Zipf Test': getZipf(
-                    frequency=f, frequency_words=handler.frequency_words
-                ),
+                'Hapax Percentage': handler.getHapaxValue(),
+                'Writer\'s View': handler.getWriterView(),
+                'Verb Distances': handler.getVerbDistance(),
+                'Zipf Test': handler.getZipf(),
             }
         }

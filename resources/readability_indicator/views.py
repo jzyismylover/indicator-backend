@@ -26,10 +26,11 @@ def getHandler(parser=parser) -> Readability:
 
 
 def handleIndicatorReturn(**kargs):
-    return marshal(
-        kargs, {'value': fields.String, 'type': fields.String}, envelope='data'
-    )
-
+    return {
+        'data': {
+            kargs['type']: kargs['value']
+        }
+    }
 
 class ARI(Resource):
     def post(self):
@@ -50,7 +51,7 @@ class ARIGradeLevels(Resource):
 class RIX(Resource):
     def post(self):
         handler = getHandler()
-        ans = handler.getARIGradeLevels()
+        ans = handler.getRIX()
 
         return handleIndicatorReturn(value=ans, type='ARIGradeLevel')
 
@@ -58,7 +59,7 @@ class RIX(Resource):
 class FlsechKincaidGrade(Resource):
     def post(self):
         handler = getHandler()
-        ans = handler.getARIGradeLevels()
+        ans = handler.getFlsechKincaidGrade()
 
         return handleIndicatorReturn(value=ans, type='ARIGradeLevel')
 
@@ -66,7 +67,7 @@ class FlsechKincaidGrade(Resource):
 class GunningFog(Resource):
     def post(self):
       handler = getHandler()
-      ans = handler.getARIGradeLevels()
+      ans = handler.getGunningFog()
 
       return handleIndicatorReturn(value=ans, type='ARIGradeLevel')
 
@@ -74,7 +75,7 @@ class GunningFog(Resource):
 class Smog(Resource):
     def post(self):
       handler = getHandler()
-      ans = handler.getARIGradeLevels()
+      ans = handler.getSmog()
 
       return handleIndicatorReturn(value=ans, type='ARIGradeLevel')
 
@@ -82,7 +83,7 @@ class Smog(Resource):
 class ColemanLiauIndex(Resource):
     def post(self):
       handler = getHandler()
-      ans = handler.getARIGradeLevels()
+      ans = handler.getColemanLiauIndex()
 
       return handleIndicatorReturn(value=ans, type='ARIGradeLevel')
 
@@ -90,7 +91,7 @@ class ColemanLiauIndex(Resource):
 class DaleChallIndex(Resource):
     def post(self):
       handler = getHandler()
-      ans = handler.getARIGradeLevels()
+      ans = handler.getDaleChallIndex()
 
       return handleIndicatorReturn(value=ans, type='ARIGradeLevel')
 
@@ -98,9 +99,9 @@ class DaleChallIndex(Resource):
 class LWIndex(Resource):
     def post(self):
       handler = getHandler()
-      ans = handler.getARIGradeLevels()
+      ans = handler.getLWIndex()
 
-      return handleIndicatorReturn(value=ans, type='ARIGradeLevel')
+      return handleIndicatorReturn(value=ans, type='LWIndex')
 
 
 class AllReadability(Resource):

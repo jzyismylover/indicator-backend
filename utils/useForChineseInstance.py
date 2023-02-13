@@ -143,26 +143,33 @@ SYMBOLS = [
     '$',
 ]
 
-
 class ZH_Utils(Base_Utils):
-    def __init__(self, text, is_cut_word=True) -> None:
-        self.text = text
-        self.words = self.get_words(is_cut_word)
-        self.hapax = []
-        self.frequency_words = []
-        self.frequency = self.get_word_frequency()
-        self.tags = []
-        self.real_words = []
-        self.h_value = 0
+    def get_sentences(self, text):
+        p = re.compile(r'(“.*?”)|(.*?[。！？…]{1,2}”?)')
+        text = text.replace('\n', '')
+        sentences = []
+        for i in p.finditer(text):
+            temp = ''
+            start = i.start()
+            end = i.end()
+            for k in range(start, end):
+                temp += text[k]
+            if temp != '':
+                sentences.append(temp)
+        return sentences
 
-    def get_words(self, is_cut_word=False) -> list:
-        if is_cut_word == False:
-            return convert(self.text, 'zh-cn').strip().split(' ')
-        else:
-            return [i for i in jieba.cut(self.text.strip()) if i not in SYMBOLS]
+    def get_words(self, sentences, is_cut_word=True) -> list:
+        words = []
+        for sentence in sentences:
+            if is_cut_word == False:
+                words.extend(i for i in convert(sentence, 'zh-cn').strip().split(' '))
+            else:
+                words.extend([i for i in jieba.cut(sentence.strip()) if i not in SYMBOLS])
+        return words
 
-    def get_word_frequency(self) -> None:
-        words_set = set(self.words)
+    def get_word_frequency(self, words) -> None:
+        hapax = []
+        words_set = set(words)
 
         temp = []
         frequency = []
@@ -173,84 +180,58 @@ class ZH_Utils(Base_Utils):
                     temp.append(i)
 
         for word in temp:
-            num = self.words.count(word)
+            num = words.count(word)
             if num == 1:
-                self.hapax.append(word)
+                hapax.append(word)
             frequency.append({'word': word, 'num': num})
+        frequency = sorted(
+            frequency, key=lambda row: (row['num'], row['word']), reverse=True
+        )
 
-        frequency = sorted(frequency, key=lambda row: (row['num'], row['word']), reverse=True)
-        self.frequency_words = list(map(lambda row: row['word'], frequency))
-        return list(map(lambda row: row['num'], frequency))
+        return {
+            'frequency': list(map(lambda row: row['num'], frequency)),
+            'frequency_words': list(map(lambda row: row['word'], frequency)),
+            'hapax': hapax,
+        }
 
-    def get_h_value(self):
-        h_value = 0
-        for num, fre in enumerate(self.frequency):
-            if num + 1 == fre:
-                h_value = fre
-                break
-
-        if h_value == 0:
-            fi = 0
-            fj = 0
-            ri = 0
-            rj = 0
-            for num, fre in enumerate(self.frequency):
-                if num + 1 <= fre:
-                    fi = fre
-                    ri = num + 1
-            for num, fre in enumerate(self.frequency):
-                if num + 1 >= fre:
-                    fj = fre
-                    rj = num + 1
-                    break
-            h_value = (rj * fi - ri * fj) / (rj - ri + fi - fj)
-        self.h_value = h_value
-
-    def get_word_character(self):
+    def get_word_character(self, words):
         postagger = Postagger(POS_MODEL_PATH)
-        self.tags = [i for i in postagger.postag(self.words)]
+        tags = [i for i in postagger.postag(words)]
+        return tags
 
-    def get_noun_words(self):
-        if len(self.tags) == 0:
-            self.get_word_character()
-
+    def get_noun_words(self, tags, words):
         noun_words = []
-        for i, tag in enumerate(self.tags):
+        for i, tag in enumerate(tags):
             if tag in ('g', 'j', 'n', 'nh', 'ni', 'nl', 'ns', 'nz', 'x'):
-                noun_words.append(self.words[i])
+                noun_words.append(words[i])
         return noun_words
 
     def is_verb_word(self, tag):
         if tag in ('v'):
             return True
-        else: 
+        else:
             return False
-    def get_verb_words(self):
-        if len(self.tags) == 0:
-            self.get_word_character()
 
+    def get_verb_words(self, tags, words):
         verb_words = []
-        for i, tag in enumerate(self.tags):
+        for i, tag in enumerate(tags):
             if self.is_verb_word(tag):
-                verb_words.append(self.words[i])
+                verb_words.append(words[i])
         return verb_words
 
-    def get_adjective_words(self):
-        if len(self.tags) == 0:
-            self.get_word_character()
-
+    def get_adjective_words(self, tags, words):
         adjective_words = []
-        for i, tag in enumerate(self.tags):
+        for i, tag in enumerate(tags):
             if tag in ('a', 'b'):
-                adjective_words.append(self.words[i])
+                adjective_words.append(words[i])
         return adjective_words
 
-    def get_real_words(self):
-        if len(self.tags) == 0:
-            self.get_word_character()
-
+    def get_real_words(self, tags, words):
+        real_words = []
         function_word_tags = ['c', 'd', 'e', 'g', 'h', 'i', 'o', 'u', 'wp']
-        for i, tag in enumerate(self.tags):
+        for i, tag in enumerate(tags):
             if function_word_tags.count(tag) == 0:
-                self.real_words.append(self.words[i])
-        self.real_words = [i for i in set(self.real_words)]
+                real_words.append(words[i])
+        real_words = [i for i in set(real_words)]
+
+        return real_words

@@ -9,7 +9,7 @@ services:
     links:
       - redis
     volumes:
-      - /usr/local/share/nltk-data:/root/nltk_data
+      - /usr/local/share/nltk_data:/root/nltk_data
   redis:
     container_name: redis
     image: redis:alpine

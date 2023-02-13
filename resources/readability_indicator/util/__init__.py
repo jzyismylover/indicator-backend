@@ -3,9 +3,11 @@ from resources.readability_indicator.util.syllables import count
 from utils import EN_Utils
 
 
-class Readability(EN_Utils):
+class Readability:
     def __init__(self, text: str) -> None:
-        super().__init__(text)
+        self.handler = EN_Utils()
+        self.sentences = self.handler.get_sentences(text)
+        self.words = self.handler.get_words(self.sentences)
         self.analyze_text()
 
     def analyze_text(self):
