@@ -4,7 +4,8 @@
 import math
 from utils import EN_Utils, ZH_Utils, Base_Utils
 
-LANGUAGE_HANDLER_MAPPER = {'en': EN_Utils, 'zh': ZH_Utils }
+LANGUAGE_HANDLER_MAPPER = {'en': EN_Utils, 'zh': ZH_Utils}
+
 
 class CommonIndicatorHandler:
     def __init__(self, text, lg_type) -> None:
@@ -12,7 +13,7 @@ class CommonIndicatorHandler:
         self.sentences = self.handler.get_sentences(text)
         self.words = self.handler.get_words(self.sentences)
 
-        FRE_ANS= self.handler.get_word_frequency(self.words)
+        FRE_ANS = self.handler.get_word_frequency(self.words)
         self.hapax = FRE_ANS['hapax']
         self.frequency = FRE_ANS['frequency']
         self.frequency_words = FRE_ANS['frequency_words']
@@ -27,7 +28,6 @@ class CommonIndicatorHandler:
     def getTTRValue(self):
         ans = len(self.frequency) / len(self.words)
         return ans
-
 
     def getHPoint(self):
         h_value = 0
@@ -51,10 +51,9 @@ class CommonIndicatorHandler:
                     rj = num + 1
                     break
             h_value = (rj * fi - ri * fj) / (rj - ri + fi - fj)
-        
+
         self.h_value = h_value
         return h_value
-
 
     def getEntroyValue(self):
         N = len(self.words)
@@ -65,7 +64,6 @@ class CommonIndicatorHandler:
             H += rate * math.log2(rate)
 
         return H
-
 
     def getR1Value(self):
         N = len(self.words)
@@ -89,9 +87,8 @@ class CommonIndicatorHandler:
         RR = 0
         for num in self.frequency:
             RR += (num / N) ** 2
-    
-        return RR
 
+        return RR
 
     def getRRmcValue(self):
         RR = self.getRRValue()
@@ -100,14 +97,13 @@ class CommonIndicatorHandler:
 
         return RRmc
 
-
     def getTCValue(self):
         Tr = 0
-        
+
         h = self.h_value
         if self.h_value == 0:
             h = self.getHPoint()
-        
+
         if len(self.tags) == 0:
             self.tags = self.handler.get_word_character(self.words)
         if len(self.real_words) == 0:
@@ -122,7 +118,6 @@ class CommonIndicatorHandler:
 
         return Tr * 2
 
-
     def getSecondTCValue(self):
         Tr = 0
         h = self.h_value
@@ -133,7 +128,7 @@ class CommonIndicatorHandler:
             self.tags = self.handler.get_word_character(self.words)
         if len(self.real_words) == 0:
             self.real_words = self.handler.get_real_words(self.tags, self.words)
-        
+
         for i in range(math.ceil(h), math.floor(2 * h) + 1):
             word = self.frequency_words[i - 1]
             if self.real_words.count(word) != 0:
@@ -142,7 +137,6 @@ class CommonIndicatorHandler:
 
         return Tr * 2
 
-
     def getAcitvityValue(self):
         if len(self.tags) == 0:
             self.tags = self.handler.get_word_character(self.words)
@@ -150,10 +144,13 @@ class CommonIndicatorHandler:
         adjective_words = self.handler.get_adjective_words(self.tags, self.words)
         verb_words_len = len(verb_words)
         adjective_words_len = len(adjective_words)
-        activity = verb_words_len / (verb_words_len + adjective_words_len)
 
-        return activity
+        if verb_words_len == 0:
+            return 0
+        elif adjective_words_len == 0:
+            return 1
 
+        return verb_words_len / (verb_words_len + adjective_words_len)
 
     def getDescriptivityValue(self):
         if len(self.tags) == 0:
@@ -162,10 +159,13 @@ class CommonIndicatorHandler:
         adjective_words = self.handler.get_adjective_words(self.tags, self.words)
         verb_words_len = len(verb_words)
         adjective_words_len = len(adjective_words)
-        descriptivity = adjective_words_len / (verb_words_len + adjective_words_len)
 
-        return descriptivity
+        if verb_words_len == 0:
+            return 1
+        elif adjective_words_len == 0:
+            return 0
 
+        return adjective_words_len / (verb_words_len + adjective_words_len)
 
     def getLValue(self):
         L = 0
@@ -175,7 +175,6 @@ class CommonIndicatorHandler:
             L += math.sqrt(distance + 1)
 
         return L
-
 
     def getCurveLengthValue(self):
         f = self.frequency
@@ -193,7 +192,6 @@ class CommonIndicatorHandler:
         R = 1 - LR / L
 
         return R
-
 
     def getLambdaValue(self):
         L = self.getLValue()
@@ -217,7 +215,6 @@ class CommonIndicatorHandler:
 
         return A
 
-
     def getGiniValue(self):
         V = len(self.frequency)
         N = len(self.words)
@@ -229,19 +226,16 @@ class CommonIndicatorHandler:
 
         return G
 
-
     def getR4Value(self):
         G = self.getGiniValue()
         R4 = 1 - G
         return R4
-
 
     def getHapaxValue(self):
         N = len(self.words)
         rate = len(self.hapax) / N
 
         return rate
-
 
     def getWriterView(self):
         f = self.frequency
@@ -264,7 +258,6 @@ class CommonIndicatorHandler:
 
         return cosa
 
-
     def getVerbDistance(self):
         verb_V = 0
         verb_idx_list = []
@@ -280,7 +273,6 @@ class CommonIndicatorHandler:
         verb_V = verb_V / (len(verb_idx_list) - 1)
 
         return verb_V
-
 
     def getZipf(self):
         ll = 0
