@@ -219,10 +219,15 @@ class ZipfTest(Resource):
 
 class ALLCommonIndicator(Resource):
     def post(self):
+        import datetime
+        start_time = datetime.datetime.now()
         handler = getParams(parser=parser)
         h = handler.getHPoint()
         Activity = handler.getAcitvityValue()
         G = handler.getGiniValue()
+
+        end_time = datetime.datetime.now()
+        print(f'parser time ${end_time - start_time}')
 
         return {
             'data': {
@@ -244,6 +249,6 @@ class ALLCommonIndicator(Resource):
                 'Hapax Percentage': handler.getHapaxValue(),
                 'Writer\'s View': handler.getWriterView(),
                 'Verb Distances': handler.getVerbDistance(),
-                'Zipf Test': handler.getZipf(),
+                #'Zipf Test': handler.getZipf(),
             }
         }

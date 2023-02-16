@@ -1,6 +1,7 @@
 import re
-from hanlp_restful import HanLPClient
+import hanlp
 from utils.useForFactory import Base_Utils
+from hanlp.components.mtl.multi_task_learning import MultiTaskLearning
 
 SYMBOLS = [
     'A',
@@ -137,12 +138,8 @@ SYMBOLS = [
     '$',
 ]
 
+Hanlp: MultiTaskLearning = hanlp.load(hanlp.pretrained.mtl.NPCMJ_UD_KYOTO_TOK_POS_CON_BERT_BASE_CHAR_JA)
 
-HanLP = HanLPClient(
-    url='https://www.hanlp.com/api',
-    auth='MTkxOUBiYnMuaGFubHAuY29tOjdGd0I3STZPQ0xoU2lvdHo=',
-    language='mul',
-)
 class JP_Utils(Base_Utils):
     def __init__(self) -> None:
         super().__init__()
@@ -161,9 +158,14 @@ class JP_Utils(Base_Utils):
     def get_words(self, sentences):
         words = []
         tags = []
+        tasks = list(Hanlp.tasks.keys())
+        for task in tasks:
+            if task not in ('tok/fine', 'pos/npcmj'):
+                del Hanlp[task]
         for sentence in sentences:
-            words.extend([i for i in HanLP.parse(sentence)['tok'] if i not in SYMBOLS])
-            tags.extend([i for i in HanLP.parse(sentence)['pos'] if i not in SYMBOLS])
+            ans = Hanlp(sentence)
+            words.extend([i for i in ans['tok/fine'] if i not in SYMBOLS])
+            tags.extend([i for i in ans['pos/npcmj'] if i not in SYMBOLS])
 
         self.tags = tags
         return words
@@ -187,7 +189,7 @@ class JP_Utils(Base_Utils):
             'hapax': hapax,
         }
 
-    def get_word_character(self, words):
+    def get_word_character(self, words = []):
         return self.tags
 
     def get_adjective_words(self, tags, words):
@@ -215,19 +217,19 @@ class JP_Utils(Base_Utils):
         return [i for i in set(real_words)]
 
     def is_adjective_words(self, tag):
-        if re.match('JJ', tag) is not None:
+        if re.match('ADJI', tag) is not None:
             return True
         else:
             return False
 
     def is_verb_word(self, tag):
-        if re.match('VV', tag) is not None:
+        if re.match('VB', tag) is not None:
             return True
         else:
             return False
 
     def is_real_word(self, tag):
-        pattern = re.compile(r'JJ|VV|VA|NR|M|DT')
+        pattern = re.compile(r'ADJJ|N|NUM|VB')
         if re.match(pattern, tag) is not None:
             return True
         else:
