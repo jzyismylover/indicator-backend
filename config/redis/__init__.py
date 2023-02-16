@@ -20,10 +20,13 @@ def mark_dyn_data(id, data):
     data = pickle.dumps(data)
     expires = int(time.time()) + 3600
     data_key = KEY + user_id
-    p = redis_client.pipeline()
-    p.set(data_key, data)
-    p.expireat(data_key, expires)
-    p.execute()
+    try:
+        p = redis_client.pipeline()
+        p.set(data_key, data)
+        p.expireat(data_key, expires)
+        p.execute()
+    except Exception as e:
+        pass
 
 def get_dyn_data(id):
     from setup import redis_client
@@ -32,7 +35,7 @@ def get_dyn_data(id):
     try:
         data = redis_client.get(data_key)
     except Exception as e:
-        abort(500)
+        return None
 
     if data:
       return pickle.loads(data)

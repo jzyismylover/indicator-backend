@@ -2,13 +2,6 @@ import abc
 
 
 class Base_Utils(object):
-    def __init__(self) -> None:
-        self.sentences = []
-        self.words = []
-        self.frequency = []
-        self.tags = []
-        self.hapax = []
-
     # GET 分句列表
     @abc.abstractmethod
     def get_sentences(self, text):
@@ -19,11 +12,11 @@ class Base_Utils(object):
     def get_words(self, sentences):
         pass
 
-    # GET 词频字典
+    # GET 词频list
     def get_word_frequency(self, words) -> None:
         pass
 
-    # GET h_value
+    # GET hPoint
     def get_h_value(self) -> None:
         pass
 
@@ -42,6 +35,7 @@ class Base_Utils(object):
     def get_adjective_words(self, tags, words=[]):
         pass
 
+    # GET 实词列表
     @abc.abstractmethod
     def get_real_words(self, tags, words=[]):
         pass

@@ -31,7 +31,8 @@ def getLanguageHandler(lg_text, lg_type, *, hash_value=''):
             handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
             mark_dyn_data(hash_value, handler)
     except Exception as e:
-        handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
+        print(e)
+        pass
     return handler
 
 
