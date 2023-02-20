@@ -162,13 +162,13 @@ class JP_Utils(Base_Utils):
         words = []
         for sentence in sentences:
             ans = Hanlp(sentence, tasks=['tok/fine'])
-            words.extend([i for i in ans if i not in SYMBOLS])
+            words.extend([i for i in ans['tok/fine'] if i not in SYMBOLS])
 
         return words
 
     def get_word_character(self, words=[]):
         tags = Hanlp(words, tasks='pos/npcmj')
-        return tags
+        return tags['pos/npcmj']
 
     def is_adjective_words(self, tag):
         if re.match('ADJI', tag) is not None:
