@@ -143,6 +143,7 @@ SYMBOLS = [
     '$',
 ]
 
+
 class ZH_Utils(Base_Utils):
     def get_sentences(self, text):
         p = re.compile(r'(“.*?”)|(.*?[。！？…]{1,2}”?)')
@@ -164,7 +165,9 @@ class ZH_Utils(Base_Utils):
             if is_cut_word == False:
                 words.extend(i for i in convert(sentence, 'zh-cn').strip().split(' '))
             else:
-                words.extend([i for i in jieba.cut(sentence.strip()) if i not in SYMBOLS])
+                words.extend(
+                    [i for i in jieba.cut(sentence.strip()) if i not in SYMBOLS]
+                )
         return words
 
     def get_word_frequency(self, words) -> None:
@@ -212,26 +215,15 @@ class ZH_Utils(Base_Utils):
         else:
             return False
 
-    def get_verb_words(self, tags, words):
-        verb_words = []
-        for i, tag in enumerate(tags):
-            if self.is_verb_word(tag):
-                verb_words.append(words[i])
-        return verb_words
+    def is_adjective_word(self, tag):
+        if tag in ('a', 'b'):
+            return True
+        else:
+            return False
 
-    def get_adjective_words(self, tags, words):
-        adjective_words = []
-        for i, tag in enumerate(tags):
-            if tag in ('a', 'b'):
-                adjective_words.append(words[i])
-        return adjective_words
-
-    def get_real_words(self, tags, words):
-        real_words = []
-        function_word_tags = ['c', 'd', 'e', 'g', 'h', 'i', 'o', 'u', 'wp']
-        for i, tag in enumerate(tags):
-            if function_word_tags.count(tag) == 0:
-                real_words.append(words[i])
-        real_words = [i for i in set(real_words)]
-
-        return real_words
+    def is_real_word(self, tag):
+        REAL_WORDS_TAG = ['c', 'd', 'e', 'g', 'h', 'i', 'o', 'u', 'wp', 'a', 'b']
+        if tag in REAL_WORDS_TAG:
+            return True
+        else:
+            return False
