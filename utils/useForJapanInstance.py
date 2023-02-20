@@ -165,7 +165,6 @@ class JP_Utils(Base_Utils):
             words.extend([i for i in HanLP.parse(sentence)['tok'] if i not in SYMBOLS])
             tags.extend([i for i in HanLP.parse(sentence)['pos'] if i not in SYMBOLS])
 
-        self.tags = tags
         return words
 
     def get_word_frequency(self, words):
