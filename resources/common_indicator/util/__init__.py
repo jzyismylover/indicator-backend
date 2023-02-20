@@ -2,9 +2,15 @@
 通用指标计算函数
 """
 import math
-from utils import EN_Utils, ZH_Utils, Base_Utils, JP_Utils
+from utils import EN_Utils, ZH_Utils, Base_Utils, JP_Utils, ID_Utils, TA_Utils
 
-LANGUAGE_HANDLER_MAPPER = {'en': EN_Utils, 'zh': ZH_Utils, 'ja': JP_Utils}
+LANGUAGE_HANDLER_MAPPER = {
+    'en': EN_Utils,
+    'zh': ZH_Utils,
+    'ja': JP_Utils,
+    'id': ID_Utils,
+    'tl': TA_Utils,
+}
 
 
 class CommonIndicatorHandler:
