@@ -2,7 +2,6 @@ import time
 import pickle
 import os
 from flask_redis import FlaskRedis
-from flask_restful import abort
 
 def init_redis(*, app) -> FlaskRedis:
     if os.path.exists('/.dockerenv'):
@@ -30,8 +29,8 @@ def mark_dyn_data(id, data):
 
 def get_dyn_data(id):
     from setup import redis_client
-    user_id = str(id)
-    data_key = KEY + user_id
+    id = str(id)
+    data_key = KEY + id
     try:
         data = redis_client.get(data_key)
     except Exception as e:

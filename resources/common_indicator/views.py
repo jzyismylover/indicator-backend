@@ -1,4 +1,3 @@
-import math
 import hashlib
 from flask_restful import Resource, reqparse, fields, marshal
 from config import get_dyn_data, mark_dyn_data
@@ -23,7 +22,6 @@ def getParams(parser) -> CommonIndicatorHandler:
     handler = getLanguageHandler(lg_text, lg_type, hash_value=hash_value)
     return handler
 
-
 def getLanguageHandler(lg_text, lg_type, *, hash_value=''):
     try:
         handler = get_dyn_data(hash_value)
@@ -31,7 +29,6 @@ def getLanguageHandler(lg_text, lg_type, *, hash_value=''):
             handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
             mark_dyn_data(hash_value, handler)
     except Exception as e:
-        print(e)
         pass
     return handler
 
