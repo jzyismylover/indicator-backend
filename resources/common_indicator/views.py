@@ -22,6 +22,7 @@ def getParams(parser) -> CommonIndicatorHandler:
     handler = getLanguageHandler(lg_text, lg_type, hash_value=hash_value)
     return handler
 
+
 def getLanguageHandler(lg_text, lg_type, *, hash_value=''):
     try:
         handler = get_dyn_data(hash_value)
@@ -34,11 +35,7 @@ def getLanguageHandler(lg_text, lg_type, *, hash_value=''):
 
 
 def handleIndicatorReturn(**kargs):
-    return {
-        'data': {
-            kargs['type']: kargs['value']
-        }
-    }
+    return {'data': {kargs['type']: kargs['value']}}
 
 
 """
@@ -118,7 +115,7 @@ class SecondaryTCValue(Resource):
 class ActivityValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
-        activity = handler.getAcitvityValue( )
+        activity = handler.getAcitvityValue()
 
         return handleIndicatorReturn(value=activity, type='Activity')
 
@@ -241,6 +238,6 @@ class ALLCommonIndicator(Resource):
                 'Hapax Percentage': handler.getHapaxValue(),
                 'Writer\'s View': handler.getWriterView(),
                 'Verb Distances': handler.getVerbDistance(),
-                'Zipf Test': handler.getZipf(),
+                # 'Zipf Test': handler.getZipf(),
             }
         }

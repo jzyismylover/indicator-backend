@@ -15,4 +15,4 @@ jieba
 zhconv
 pyltp
 nltk
-hanlp
+hanlp_restful
