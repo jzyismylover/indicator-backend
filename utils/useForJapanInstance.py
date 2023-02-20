@@ -138,7 +138,10 @@ SYMBOLS = [
     '$',
 ]
 
-Hanlp: MultiTaskLearning = hanlp.load(hanlp.pretrained.mtl.NPCMJ_UD_KYOTO_TOK_POS_CON_BERT_BASE_CHAR_JA)
+Hanlp: MultiTaskLearning = hanlp.load(
+    hanlp.pretrained.mtl.NPCMJ_UD_KYOTO_TOK_POS_CON_BERT_BASE_CHAR_JA
+)
+
 
 class JP_Utils(Base_Utils):
     def __init__(self) -> None:
@@ -157,64 +160,15 @@ class JP_Utils(Base_Utils):
 
     def get_words(self, sentences):
         words = []
-        tags = []
-        tasks = list(Hanlp.tasks.keys())
-        for task in tasks:
-            if task not in ('tok/fine', 'pos/npcmj'):
-                del Hanlp[task]
         for sentence in sentences:
-            ans = Hanlp(sentence)
-            words.extend([i for i in ans['tok/fine'] if i not in SYMBOLS])
-            tags.extend([i for i in ans['pos/npcmj'] if i not in SYMBOLS])
+            ans = Hanlp(sentence, tasks=['tok/fine'])
+            words.extend([i for i in ans if i not in SYMBOLS])
 
-        self.tags = tags
         return words
 
-    def get_word_frequency(self, words):
-        hapax = []
-        frequency = []
-        words_set = set(words)
-
-        for word in words_set:
-            frequency.append({'num': words.count(word), 'word': word})
-            if words.count(word) == 1:
-                hapax.append(word)
-
-        frequency = sorted(
-            frequency, key=lambda row: (row['num'], row['word']), reverse=True
-        )
-        return {
-            'frequency': [i for i in map(lambda row: row['num'], frequency)],
-            'frequency_words': [i for i in map(lambda row: row['word'], frequency)],
-            'hapax': hapax,
-        }
-
-    def get_word_character(self, words = []):
-        return self.tags
-
-    def get_adjective_words(self, tags, words):
-        adjective_words = []
-        for i, tag in enumerate(tags):
-            if self.is_adjective_words(tag):
-                adjective_words.append(words[i])
-
-        return adjective_words
-
-    def get_verb_words(self, tags, words):
-        verb_words = []
-        for i, tag in enumerate(tags):
-            if self.is_verb_word(tag):
-                verb_words.append(words[i])
-
-        return verb_words
-
-    def get_real_words(self, tags, words):
-        real_words = []
-        for i, tag in enumerate(tags):
-            if self.is_real_word(tag):
-                real_words.append(words[i])
-
-        return [i for i in set(real_words)]
+    def get_word_character(self, words=[]):
+        tags = Hanlp(words, tasks='pos/npcmj')
+        return tags
 
     def is_adjective_words(self, tag):
         if re.match('ADJI', tag) is not None:
