@@ -1,6 +1,9 @@
 from flask_restful import Api
 from flask import Blueprint
 from resources.common_indicator.views import (
+    TotalWords,
+    DictWords,
+    HapaxWords,
     TTRValue,
     HPoint,
     EntropyValue,
@@ -21,7 +24,7 @@ from resources.common_indicator.views import (
     RRValue,
     SecondaryTCValue,
     ZipfTest,
-    ALLCommonIndicator
+    ALLCommonIndicator,
 )
 
 common_indicator = Blueprint('common', __name__, url_prefix='/common')
@@ -50,3 +53,6 @@ common_api.add_resource(WriterView, '/writerView')
 common_api.add_resource(VerbDistance, '/verbDistance')
 common_api.add_resource(ZipfTest, '/zipf')
 common_api.add_resource(ALLCommonIndicator, '/all')
+common_api.add_resource(TotalWords, '/words')
+common_api.add_resource(DictWords, '/dicts')
+common_api.add_resource(HapaxWords, '/hapaxwords')

@@ -43,6 +43,30 @@ def handleIndicatorReturn(**kargs):
 """
 
 
+class TotalWords(Resource):
+    def post(self):
+        handler = getParams(parser=parser)
+        total_words = len(handler.words)
+
+        return handleIndicatorReturn(value=total_words, type='总词数')
+
+
+class DictWords(Resource):
+    def post(self):
+        handler = getParams(parser=parser)
+        dict_words = len(handler.frequency)
+
+        return handleIndicatorReturn(value=dict_words, type='词典数')
+
+
+class HapaxWords(Resource):
+    def post(self):
+        handler = getParams(parser=parser)
+        dict_words = len(handler.hapax)
+
+        return handleIndicatorReturn(value=dict_words, type='单现词数')
+
+
 class TTRValue(Resource):
     def post(self):
         handler = getParams(parser=parser)
@@ -220,6 +244,10 @@ class ALLCommonIndicator(Resource):
 
         return {
             'data': {
+                'Words': len(handler.words),
+                'Dicts': len(handler.frequency),
+                'HapaxWords': len(handler.hapax),
+                'HapaxRate': len(handler.hapax) / len(handler.words),
                 'TTR': handler.getTTRValue(),
                 'HPoint': h,
                 'Entropy': handler.getEntroyValue(),
@@ -235,7 +263,6 @@ class ALLCommonIndicator(Resource):
                 'Lambda': handler.getLambdaValue(),
                 'G': G,
                 'R4': 1 - G,
-                'Hapax Percentage': handler.getHapaxValue(),
                 'Writer\'s View': handler.getWriterView(),
                 'Verb Distances': handler.getVerbDistance(),
                 # 'Zipf Test': handler.getZipf(),
