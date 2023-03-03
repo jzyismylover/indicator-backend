@@ -1,5 +1,4 @@
 from flask import Flask
-from flask_restful import Api
 from flask_cors import CORS
 from config import init_db, init_redis
 from resources import init_views
