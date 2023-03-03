@@ -4,7 +4,7 @@ import os
 from flask_redis import FlaskRedis
 from yaml import safe_load
 
-FILE_NAME = os.path.abspath(os.path.join(os.path.dirname(__file__), 'config.yml'))
+FILE_NAME = os.path.abspath(os.path.join('config', 'config.yml'))
 with open(FILE_NAME, 'rb') as f:
     try:
         y = safe_load(f)

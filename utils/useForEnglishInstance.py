@@ -3,8 +3,7 @@ import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.tag import pos_tag
 from utils.useForFactory import Base_Utils
-
-SPECIAL_CHARS = ['.', ',', '!', '?']
+from utils.constant import EN_SPECIAL_WORDS as SYMBOLS
 
 
 class EN_Utils(Base_Utils):
@@ -22,11 +21,9 @@ class EN_Utils(Base_Utils):
                 if re.search('[a-zA-Z0-9]', word) is None:
                     pass
                 else:
-                    new_word = word.replace(",", "").replace(".", "").replace(";", "")
-                    new_word = (
-                        new_word.replace("!", "").replace("?", "").replace("\'", "")
-                    )
-                    filtered_words.append(new_word.lower())
+                    for _ in SYMBOLS:
+                        word = word.replace(_, '')
+                    filtered_words.append(word.lower())
             all_words.extend(filtered_words)
         return all_words
 

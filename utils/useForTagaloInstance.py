@@ -4,8 +4,7 @@
 import re
 import hanlp
 from utils.useForFactory import Base_Utils
-
-SPECIAL_CHARS = ['.', ',', '!', '?', '\n']
+from utils import UNIVERSAL_HANLP as Hanlp
 
 Hanlp = hanlp.load(
     hanlp.pretrained.mtl.UD_ONTONOTES_TOK_POS_LEM_FEA_NER_SRL_DEP_SDP_CON_MMINILMV2L6
