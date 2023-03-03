@@ -1,0 +1,15 @@
+pd_db:
+  hostname: mysql
+  password: jzy
+  port: 3306
+de_db:
+  hostname: localhost
+  password: jintao1990
+  port: 3306
+pd_redis:
+  hostname: redis
+  port: 6379
+de_redis:
+  hostname: localhost
+  port: 6379
+  password: jzy
