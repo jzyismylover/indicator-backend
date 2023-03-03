@@ -1,5 +1,7 @@
-from flask_restful import Resource, fields, reqparse, marshal_with
 import re
+from flask_restful import Resource, fields, reqparse, marshal_with
+from utils.jwt import create_token
+from config import mark_dyn_data, get_dyn_data
 
 def verify_passwd(value, name):
     res = re.search(
@@ -15,9 +17,9 @@ def verify_passwd(value, name):
 login_parser = reqparse.RequestParser()
 login_parser.add_argument('username', required=True, location='form')
 login_parser.add_argument(
-    'password', type=verify_passwd, required=True, location='form', help='password: invalid: {error_msg}'
+    'password', type=verify_passwd, required=True, location='form', help='{error_msg}'
 )
-user_field = {'username': fields.String, 'password': fields.String, 'msg': fields.String(attribute='message')}
+user_field = {'msg': fields.String(attribute='message')}
 
 
 class Login(Resource):
@@ -25,25 +27,20 @@ class Login(Resource):
     def post(self):
         params = login_parser.parse_args()
         username, password = params['username'], params['password']
-        return {'username': username, 'password': password}
+        token = create_token(username, password)
+        return {
+            'message': '登录成功' 
+        }, 200
         
 
 regist_parser = login_parser.copy()
 regist_parser.add_argument('confirm_password', type=verify_passwd, location='form', required=True)
-
-
 class Regist(Resource):
     @marshal_with(fields=user_field, envelope='data')
     def post(self):
         params = regist_parser.parse_args()
-        username, password, confirm_passwd = (
+        username, password, code = (
             params['username'],
             params['password'],
-            params['confirm_password'],
         )
-        if password != confirm_passwd:
-            return {
-              'message': '密码不一致'
-            }, 400
-        else:
-            return {'username': username, 'password': password}
+        code = get_dyn_data(username, code)
