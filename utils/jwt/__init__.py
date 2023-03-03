@@ -1,6 +1,7 @@
+from flask_restful import request, output_json
 import datetime
 import jwt
-import re
+import json
 
 SALT = '%INDICATOR_BACKEND%'
 
@@ -15,25 +16,38 @@ def create_token(username, password):
     return 'Bearer ' + token
 
 
-def verify_token(token) -> bool:
+def verify_token(token):
     msg = None
     try:
-        status = jwt.decode(token, key=SALT, algorithms='HS256')
+        jwt.decode(token, key=SALT, algorithms='HS256')
+        status = 200
     except Exception as e:
         status = 201
-        msg = e
+        msg = str(e)
 
     return {
         'msg': msg,
         'status': status
     }
 
+def check_premission():
+    headers = request.headers
+    token = headers.environ['HTTP_AUTHORIZATION'][7:]
+    auth = verify_token(token)
+    if auth['status'] == 200:
+        return None
+    else:
+        return output_json({
+            'data': {
+                'msg': auth['msg']
+            }
+        }, auth['status'])
 
 if __name__ == '__main__':
     username = 'jzyismylover'
     password = 'HSHAHAHA'
     print(create_token(username, password))
 
-    token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Imp6eWlzbXlsb3ZlciIsInBhc3N3b3JkIjoiSFNIQUhBSEEiLCJleHAiOjE2Nzc2NzIzNDV9.UFS8s-X26CjI57U78x7cli_qNNh9WLFVclAdN2K0aD'
+    token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Imp6eWlzbXlsb3ZlciIsInBhc3N3b3JkIjoiSFNIQUhBSEEiLCJleHAiOjE2Nzc4MzE2ODR9.90qBWzUlPJcbM8XM_aABF80LUSMvKBNVHW7VMbe2fYM'
     ans = verify_token(token)
     print(ans)

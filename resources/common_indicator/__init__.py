@@ -1,5 +1,6 @@
 from flask_restful import Api
 from flask import Blueprint
+from utils.jwt import check_premission
 from resources.common_indicator.views import (
     TTRValue,
     HPoint,
@@ -25,6 +26,7 @@ from resources.common_indicator.views import (
 )
 
 common_indicator = Blueprint('common', __name__, url_prefix='/common')
+common_indicator.before_app_request(check_premission)
 common_api = Api(common_indicator)
 common_api.add_resource(TTRValue, '/ttr')
 common_api.add_resource(

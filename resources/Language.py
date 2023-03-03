@@ -1,9 +1,13 @@
-from flask_restful import Resource, fields, request, reqparse, marshal
 import langid
 import pdfplumber
 import docx
 import os
+from flask import Blueprint
+from flask_restful import Api
+from flask_restful import Resource, fields, request, reqparse, marshal
+from utils.jwt import check_premission
 
+"""iso-639 中英文映射"""
 LAN_MAPPER = {}
 with open(
     file=os.path.abspath(path=os.path.join('static', 'language.txt')),
@@ -72,3 +76,8 @@ class LanguageRec(Resource):
                 content = self.parse_ordinary_file(file)
 
             return self.return_lg_type(langid.classify(content[0:1000])[0], content)
+
+langrc_blueprint = Blueprint('langrc', __name__, url_prefix='/api')
+langrc_blueprint.before_app_request(check_premission)
+langrc_api = Api(langrc_blueprint)
+langrc_api.add_resource(LanguageRec, '/langrc')
