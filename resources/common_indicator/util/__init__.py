@@ -2,14 +2,31 @@
 通用指标计算函数
 """
 import math
-from utils import EN_Utils, ZH_Utils, Base_Utils, JP_Utils, ID_Utils, TA_Utils
+from utils import (
+    ENUtils,
+    ZHUtils,
+    BaseUtils,
+    IDUtils,
+    TAUtils,
+    JAUtils,
+    THUtils,
+    LAOUtils,
+    BUUtils,
+    VietnaUtils,
+    KAMUtils,
+)
 
 LANGUAGE_HANDLER_MAPPER = {
-    'en': EN_Utils,
-    'zh': ZH_Utils,
-    'ja': JP_Utils,
-    'id': ID_Utils,
-    'tl': TA_Utils,
+    'en': ENUtils,
+    'zh': ZHUtils,
+    'ja': JAUtils,
+    'id': IDUtils,
+    'tl': TAUtils,
+    'th': THUtils,
+    'lo': LAOUtils,
+    'my': BUUtils,
+    'vi': VietnaUtils,
+    'km': KAMUtils,
 }
 
 
@@ -28,8 +45,23 @@ class CommonIndicatorHandler:
         self.h_value = 0
         self.real_words = []
 
-    def getHandler(self, lg_type='en') -> Base_Utils:
+    def getHandler(self, lg_type='en') -> BaseUtils:
         return LANGUAGE_HANDLER_MAPPER[lg_type]()
+
+    def handleTokenizen(self):
+        return self.words
+
+    def handleSpeechTagging(self):
+        if self.tags:
+            return self.tags
+        tags = self.handler.get_word_character(self.words)
+        self.tags = tags
+
+        word_tags = []
+        for i in range(len(self.words)):
+            word_tags.append([self.words[i], self.tags[i]])
+
+        return word_tags
 
     def getTTRValue(self):
         ans = len(self.frequency) / len(self.words)

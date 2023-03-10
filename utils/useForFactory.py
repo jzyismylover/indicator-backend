@@ -1,7 +1,8 @@
 import abc
+from utils.hanlp import UNIVERSAL_HANLP as Hanlp
 
 
-class Base_Utils(object):
+class BaseUtils(object):
     # GET 词频list
     def get_word_frequency(self, words) -> None:
         hapax = []
@@ -50,17 +51,15 @@ class Base_Utils(object):
         return verb_words
 
     # GET 形容词列表
-    @abc.abstractmethod
     def get_adjective_words(self, tags, words=[]):
         adjective_words = []
         for i, tag in enumerate(tags):
             if self.is_adjective_word(tag):
                 adjective_words.append(words[i])
-        
+
         return adjective_words
 
     # GET 实词列表
-    @abc.abstractmethod
     def get_real_words(self, tags, words=[]):
         real_words = []
         for i, tag in enumerate(tags):
@@ -75,11 +74,21 @@ class Base_Utils(object):
         pass
 
     # GET 分词列表
-    @abc.abstractmethod
     def get_words(self, sentences):
-        pass
+        words = []
+        tags = []
+        for sentence in sentences:
+            try:
+                ans = Hanlp(sentence, tasks='ud')
+                words.extend([x for x in ans['tok']])
+                tags.extend([x for x in ans['pos']])
+            except Exception as e:
+                print(e)
+                print(sentence + '\n')
+
+        self.tags = tags
+        return words
 
     # GET 词性标注
-    @abc.abstractmethod
     def get_word_character(self, words):
-        pass
+        return self.tags

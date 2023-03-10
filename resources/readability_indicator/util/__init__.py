@@ -1,11 +1,11 @@
 import math
 from resources.readability_indicator.util.syllables import count
-from utils import EN_Utils
+from utils import ENUtils
 
 
 class Readability:
     def __init__(self, text: str) -> None:
-        self.handler = EN_Utils()
+        self.handler = ENUtils()
         self.sentences = self.handler.get_sentences(text)
         self.words = self.handler.get_words(self.sentences)
         self.analyze_text()

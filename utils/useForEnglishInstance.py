@@ -2,11 +2,10 @@ import re
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.tag import pos_tag
-from utils.useForFactory import Base_Utils
+from utils.useForFactory import BaseUtils
 from utils.constant import EN_SPECIAL_WORDS as SYMBOLS
 
-
-class EN_Utils(Base_Utils):
+class ENUtils(BaseUtils):
     def get_sentences(self, text):
         tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
         sentences = tokenizer.tokenize(text)

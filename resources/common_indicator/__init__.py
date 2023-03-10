@@ -2,6 +2,8 @@ from flask_restful import Api
 from flask import Blueprint
 from utils.jwt import check_premission
 from resources.common_indicator.views import (
+    Tokenizen,
+    SpeechTagging,
     TTRValue,
     HPoint,
     EntropyValue,
@@ -26,8 +28,10 @@ from resources.common_indicator.views import (
 )
 
 common_indicator = Blueprint('common', __name__, url_prefix='/common')
-common_indicator.before_app_request(check_premission)
+# common_indicator.before_request(check_premission)
 common_api = Api(common_indicator)
+common_api.add_resource(Tokenizen, '/tokenizen')
+common_api.add_resource(SpeechTagging, '/tagging')
 common_api.add_resource(TTRValue, '/ttr')
 common_api.add_resource(
     HPoint,

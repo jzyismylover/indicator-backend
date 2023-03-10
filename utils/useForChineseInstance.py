@@ -4,13 +4,13 @@ import os
 import re
 from zhconv import convert
 from pyltp import Postagger
-from utils.useForFactory import Base_Utils
+from utils.useForFactory import BaseUtils
 from utils.constant import ZH_SPECIAL_WORDS as SYMBOLS
 
 LTP_DATA_DIR = os.path.join('static', 'ltp_data_v3.4.0')
 POS_MODEL_PATH = os.path.join(LTP_DATA_DIR, 'pos.model')
 
-class ZH_Utils(Base_Utils):
+class ZHUtils(BaseUtils):
     def get_sentences(self, text):
         p = re.compile(r'(“.*?”)|(.*?[。！？…]{1,2}”?)')
         text = text.replace('\n', '')
