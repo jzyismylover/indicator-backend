@@ -3,3 +3,4 @@ ltp_data_v3.4.0/
 .git/
 test.ipynb
 config/*.yml 
+nltk_data/
