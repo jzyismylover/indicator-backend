@@ -18,3 +18,4 @@ nltk
 hanlp
 pyyaml
 pyjwt
+sentry-sdk[flask]
