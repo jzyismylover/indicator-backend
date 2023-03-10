@@ -9,12 +9,14 @@ parser.add_argument('lg_text', type=str, required=True, location='form')
 
 
 def generateHash(text: str):
+    """生成唯一 hash 码"""
     hash_model = hashlib.md5()
     hash_model.update(text.encode('utf-8'))
     return hash_model.hexdigest()
 
 
-def getParams(parser) -> CommonIndicatorHandler:
+def getParams(parser = parser) -> CommonIndicatorHandler:
+    """统一获取接口参数"""
     params = parser.parse_args()
     lg_type = params['lg_type']
     lg_text = params['lg_text']
@@ -23,12 +25,15 @@ def getParams(parser) -> CommonIndicatorHandler:
     return handler
 
 def getLanguageHandler(lg_text, lg_type, *, hash_value=''):
+    """实例化多语种文本处理类"""
+    handler = None
     try:
         handler = get_dyn_data(hash_value)
         if handler == None:
             handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
             mark_dyn_data(hash_value, handler)
     except Exception as e:
+        handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
         pass
     return handler
 
@@ -41,10 +46,51 @@ def handleIndicatorReturn(**kargs):
     }
 
 
+class Tokenizen(Resource):
+    """提供多语种分词接口"""
+    def post(self):
+        handler = getParams()
+        return {
+            "data": {
+                "ans": handler.handleTokenizen()
+            }
+        }
+
+class SpeechTagging(Resource):
+    """提供多语种词性标注接口"""
+    def post(self):
+        handler = getParams()
+        return {
+            "data": {
+                "ans": handler.handleSpeechTagging()
+            }
+        }
+
 """
 具体指标计算视图
 """
+class TotalWords(Resource):
+    def post(self):
+        handler = getParams(parser=parser)
+        total_words = len(handler.words)
 
+        return handleIndicatorReturn(value=total_words, type='总词数')
+
+
+class DictWords(Resource):
+    def post(self):
+        handler = getParams(parser=parser)
+        dict_words = len(handler.frequency)
+
+        return handleIndicatorReturn(value=dict_words, type='词典数')
+
+
+class HapaxWords(Resource):
+    def post(self):
+        handler = getParams(parser=parser)
+        dict_words = len(handler.hapax)
+
+        return handleIndicatorReturn(value=dict_words, type='单现词数')
 
 class TTRValue(Resource):
     def post(self):
@@ -228,6 +274,10 @@ class ALLCommonIndicator(Resource):
 
         return {
             'data': {
+                'Words': len(handler.words),
+                'Dicts': len(handler.frequency),
+                'HapaxWords': len(handler.hapax),
+                'Hapax Percentage': len(handler.hapax) / len(handler.words),
                 'TTR': handler.getTTRValue(),
                 'HPoint': h,
                 'Entropy': handler.getEntroyValue(),
@@ -243,7 +293,6 @@ class ALLCommonIndicator(Resource):
                 'Lambda': handler.getLambdaValue(),
                 'G': G,
                 'R4': 1 - G,
-                'Hapax Percentage': handler.getHapaxValue(),
                 'Writer\'s View': handler.getWriterView(),
                 'Verb Distances': handler.getVerbDistance(),
                 #'Zipf Test': handler.getZipf(),

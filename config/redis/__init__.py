@@ -11,8 +11,8 @@ with open(FILE_NAME, 'rb') as f:
     except Exception as e:
         pass
 
-
 def init_redis(*, app) -> FlaskRedis:
+    """redis 区分开发生成环境"""
     if os.path.exists('/.dockerenv'):
         hostname, port = y['pd_redis'].values()
         redis_path = f'redis://{hostname}:{port}'
@@ -23,10 +23,12 @@ def init_redis(*, app) -> FlaskRedis:
     return FlaskRedis(app)
 
 
+# redis key prefix
 KEY = 'indicator%'
 
 
 def mark_dyn_data(id, data):
+    """redis 存储数据"""
     from setup import redis_client
 
     user_id = str(id)
@@ -43,6 +45,7 @@ def mark_dyn_data(id, data):
 
 
 def get_dyn_data(id):
+    """redis 读取数据"""
     from setup import redis_client
 
     id = str(id)
