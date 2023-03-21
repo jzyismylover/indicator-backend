@@ -5,6 +5,7 @@ from resources.readability_indicator.util import Readability
 
 parser = reqparse.RequestParser()
 parser.add_argument('lg_text', required=True, location='form')
+parser.add_argument('lg_type', required=True, location='form')
 
 
 def generateHash(text: str):
@@ -16,10 +17,11 @@ def generateHash(text: str):
 def getHandler(parser=parser) -> Readability:
     args = parser.parse_args()
     lg_text = args['lg_text']
+    lg_type = args['lg_type']
     hash_value = generateHash(lg_text)
     handler = get_dyn_data(hash_value)
     if handler is None:
-        handler = Readability(lg_text)
+        handler = Readability(lg_text, lg_type)
         mark_dyn_data(hash_value, handler)
 
     return handler

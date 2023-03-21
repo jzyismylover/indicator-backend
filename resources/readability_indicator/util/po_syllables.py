@@ -22,6 +22,3 @@ def portuguese_syllable_count(word):
     else: # 如果当前字母不是元音，说明它是辅音，在第一个元音之前的辅音不属于任何音节，可以跳过
       i += 1 # 索引加一，继续遍历下一个字母
   return count
-
-
-print(portuguese_syllable_count("chocolate"))
