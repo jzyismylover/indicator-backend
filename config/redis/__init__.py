@@ -12,13 +12,13 @@ with open(FILE_NAME, 'rb') as f:
         pass
 
 def init_redis(*, app) -> FlaskRedis:
-    """redis 区分开发生成环境"""
+    # redis 区分开发环境
     if os.path.exists('/.dockerenv'):
         hostname, port = y['pd_redis'].values()
         redis_path = f'redis://{hostname}:{port}'
     else:
         hostname, port, password = y['de_redis'].values()
-        redis_path = f'redis://{password}:@{hostname}:{port}'
+        redis_path = f'redis://:{password}@{hostname}:{port}'
     app.config['REDIS_URL'] = redis_path
     return FlaskRedis(app)
 

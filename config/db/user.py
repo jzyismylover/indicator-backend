@@ -7,9 +7,17 @@ from sqlalchemy import (
     DATETIME,
     ForeignKey,
 )
-from config import db
+from config.db import Base
 
-# class User(db.Model):
-#     __tablename__ = 'users'
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     name = Column(String(32), unique=True, nullable=False)
+
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(32), unique=True, nullable=False)
+    password = Column(String(50), nullable=False)
+    email = Column(String(50), nullable=False)
+
+    def __init__(self, username, email, password) -> None:
+        self.username = username
+        self.email = email
+        self.username = password

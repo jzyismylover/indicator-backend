@@ -1,7 +1,12 @@
-from setup import db
+from config.db import engine
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-def getSQLData():
-  pass
+def getSQLData(stmt):
+  with Session(engine) as session:
+    rows = session.execute(stmt)
+    for row in rows:
+      print(row)
 
 def updateSQLData():
   pass
