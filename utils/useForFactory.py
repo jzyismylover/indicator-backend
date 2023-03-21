@@ -1,10 +1,12 @@
 import abc
+import numpy as np
 from utils.hanlp import UNIVERSAL_HANLP as Hanlp
+from sentry_sdk import capture_exception
 
 
 class BaseUtils(object):
     # GET 词频list
-    def get_word_frequency(self, words) -> None:
+    def get_word_frequency(self, words):
         hapax = []
         frequency = []
         words_set = set(words)
@@ -72,19 +74,25 @@ class BaseUtils(object):
     @abc.abstractmethod
     def get_sentences(self, text):
         pass
-
+        
     # GET 分词列表
     def get_words(self, sentences):
         words = []
         tags = []
-        for sentence in sentences:
+        SENTENCES_LIMIT = 6  # 单次处理的句子数
+        i = 0
+
+        while i < len(sentences):
             try:
+                sentence = sentences[i : i + SENTENCES_LIMIT]
                 ans = Hanlp(sentence, tasks='ud')
-                words.extend([x for x in ans['tok']])
-                tags.extend([x for x in ans['pos']])
+                words.extend([i for j in ans['tok'] for i in j])
+                tags.extend([i for j in ans['pos'] for i in j])
             except Exception as e:
-                print(e)
-                print(sentence + '\n')
+                capture_exception(e)
+                pass
+            finally:
+                i = i + SENTENCES_LIMIT
 
         self.tags = tags
         return words

@@ -1,6 +1,6 @@
 import re
 import nltk
-from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.tokenize import word_tokenize
 from nltk.tag import pos_tag
 from utils.useForFactory import BaseUtils
 from utils.constant import EN_SPECIAL_WORDS as SYMBOLS
