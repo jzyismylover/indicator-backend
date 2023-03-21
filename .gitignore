@@ -2,6 +2,7 @@ __pycache__/
 ltp_data_v3.4.0/
 .git/
 test.ipynb
-config/*.yml 
+config.yml 
 nltk_data/
-.idea/
+.idea
+test/
