@@ -1,7 +1,6 @@
 from flask_restful import request, output_json
 import datetime
 import jwt
-import json
 
 SALT = '%INDICATOR_BACKEND%'
 
@@ -13,12 +12,14 @@ def create_token(username, password):
     }
     token = jwt.encode(payload=payload, key=SALT, algorithm='HS256')
 
-    return 'Bearer ' + token
+    return token
 
 
 def verify_token(token):
     msg = None
     try:
+        # based on Bearer token
+        token = token[8:]
         jwt.decode(token, key=SALT, algorithms='HS256')
         status = 200
     except Exception as e:
