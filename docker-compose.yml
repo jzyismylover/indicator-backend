@@ -1,22 +1,21 @@
 version: '3'
-
 services:
   ocr:
-    container_name: flask
-    build: .
+    image: 172.16.234.200/server_app/indicator-backend-ocr:latest
     ports:
-      - 3500:5000
-    links:
-      - redis
-    volumes:
-      - /usr/local/share/nltk_data:/root/nltk_data
+      - 25001:5000
   redis:
-    container_name: redis
+    container_name: indicator-reids
     image: redis:alpine
+    ports:
+      - 25639:6379
+    command:
+      --requirepass "jzy"
   mysql:
-    container_name: mysql
+    container_name: indicator-mysql
     image: mysql
     ports:
-    - 5006:3306
+      - 25006:3306
     environment:
-      - MYSQL_ROOT_PASSWORD=jzyismylover
+      MYSQL_ROOT_PASSWORD: jzyismylover
+      MYSQL_DATABASE: indicator
