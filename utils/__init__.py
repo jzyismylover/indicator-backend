@@ -9,4 +9,11 @@ from utils.useForBumeseInstance import BUUtils
 from utils.useForLaosInstance import LAOUtils
 from utils.useForKampucheanInstance import KAMUtils
 from utils.useForVietnameseInstance import VietnaUtils
+from utils.useForBengalInstance import BengaliUtils
+from utils.useForKoreanInstance import KoreanUtils
+from utils.useForTurkishInstance import Turkishutils
+from utils.useForSpanishInstance import SpanishUtils
+from utils.useForPortugueseInstance import PortugueseUtils
+from utils.useForPersiannstance import PersianUtils
+from utils.useForArabicInstance import ArabyUtils
 

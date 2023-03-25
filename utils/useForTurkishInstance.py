@@ -4,6 +4,7 @@
 import nltk
 from utils.useForFactory import BaseUtils
 
+
 class Turkishutils(BaseUtils):
     def get_sentences(self, text):
         # based on nltk pickle sentence tokenize

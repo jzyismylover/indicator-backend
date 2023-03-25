@@ -14,6 +14,13 @@ from utils import (
     BUUtils,
     VietnaUtils,
     KAMUtils,
+    KoreanUtils,
+    SpanishUtils,
+    PortugueseUtils,
+    BengaliUtils,
+    PersianUtils,
+    ArabyUtils,
+    Turkishutils
 )
 
 LANGUAGE_HANDLER_MAPPER = {
@@ -27,6 +34,13 @@ LANGUAGE_HANDLER_MAPPER = {
     'my': BUUtils,
     'vi': VietnaUtils,
     'km': KAMUtils,
+    'ko': KoreanUtils,
+    'es': SpanishUtils,
+    'pt': PortugueseUtils,
+    'bn': BengaliUtils,
+    'fa': PersianUtils,
+    'ar': ArabyUtils,
+    'tr': Turkishutils
 }
 
 
@@ -101,7 +115,7 @@ class CommonIndicatorHandler:
             rate = num / N
             H += rate * math.log2(rate)
 
-        return H
+        return -H
 
     def getR1Value(self):
         N = len(self.words)
@@ -147,12 +161,15 @@ class CommonIndicatorHandler:
         if len(self.real_words) == 0:
             self.real_words = self.handler.get_real_words(self.tags, self.words)
 
-        for i, fr in enumerate(self.frequency):
-            if i + 1 > h:
-                break
-            word = self.frequency_words[i]
-            if self.real_words.count(word) != 0:
-                Tr += ((h - (i + 1)) * fr) / (h * (h - 1) * self.frequency[0])
+        try:
+            for i, fr in enumerate(self.frequency):
+                if i + 1 > h:
+                    break
+                word = self.frequency_words[i]
+                if self.real_words.count(word) != 0:
+                    Tr += ((h - (i + 1)) * fr) / (h * (h - 1) * self.frequency[0])
+        except:
+            Tr = 0  
 
         return Tr * 2
 
@@ -167,11 +184,14 @@ class CommonIndicatorHandler:
         if len(self.real_words) == 0:
             self.real_words = self.handler.get_real_words(self.tags, self.words)
 
-        for i in range(math.ceil(h), math.floor(2 * h) + 1):
-            word = self.frequency_words[i - 1]
-            if self.real_words.count(word) != 0:
-                fr = f[i - 1]
-                Tr += ((h - i) * fr) / (h * (h - 1) * f[0])
+        try:
+            for i in range(math.ceil(h), math.floor(2 * h) + 1):
+                word = self.frequency_words[i - 1]
+                if self.real_words.count(word) != 0:
+                    fr = f[i - 1]
+                    Tr += ((h - i) * fr) / (h * (h - 1) * f[0])
+        except:
+            Tr = 0
 
         return Tr * 2
 
@@ -292,6 +312,9 @@ class CommonIndicatorHandler:
         t2 = math.sqrt(r1**2 + r2**2)
         t3 = math.sqrt(r3**2 + r4**2)
 
+        if t2 == 0 or t3 == 0:
+            return 0
+
         cosa = t1 / (t2 * t3)
 
         return cosa
@@ -308,6 +331,10 @@ class CommonIndicatorHandler:
 
         for i in range(0, len(verb_idx_list) - 1):
             verb_V += verb_idx_list[i + 1] - verb_idx_list[i]
+
+        if len(verb_idx_list) == 0:
+            return 0
+
         verb_V = verb_V / (len(verb_idx_list) - 1)
 
         return verb_V

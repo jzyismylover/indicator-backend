@@ -2,9 +2,10 @@
 韩语
 """
 import re
+from utils.useForFactory import BaseUtils
 
 
-class KoreanUtils:
+class KoreanUtils(BaseUtils):
     def get_sentences(self, text):
         pattern = re.compile("(?<=[.?!\n])\s*")
         sentences = pattern.split(text)
