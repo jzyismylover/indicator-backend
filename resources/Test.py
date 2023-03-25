@@ -2,13 +2,16 @@ import psutil
 import GPUtil
 from flask_restful import Resource, Api
 from flask import Blueprint
+from utils.json_response import make_error_response, make_success_response
 
 
 class DiskCheck(Resource):
     def get(self):
         UNIT_SIZE = 1024 * 1024 * 1024  # G
         mem = psutil.virtual_memory()
-        return {'memory': mem.total / UNIT_SIZE, 'percent': mem.percent}
+        return make_success_response(
+            {'memory': mem.total / UNIT_SIZE, 'percent': mem.percent}
+        )
 
 
 class GPUCheck(Resource):
@@ -20,17 +23,18 @@ class GPUCheck(Resource):
                 {
                     'gpu_number': gpu.id,
                     'gpu_total': round((gpu.memoryTotal) / 1024),
-                    'gpu_used': round((gpu.memoryUsed) /1024, 2),
+                    'gpu_used': round((gpu.memoryUsed) / 1024, 2),
                     'gpu_usage': round((gpu.memoryUsed / gpu.memoryTotal) * 100, 2),
+                    'gpu_free': round(gpu.memoryFree)
                 }
             )
 
-        return {'detail': ans}
+        return make_success_response(ans)
 
 
 class HealthCheck(Resource):
     def get(self):
-        return {'message': '服务器运转正常'}
+        return make_success_response('服务器运转正常')
 
 
 check_model = Blueprint('check', __name__, url_prefix='/check')
