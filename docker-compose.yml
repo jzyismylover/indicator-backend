@@ -4,18 +4,13 @@ services:
     image: 172.16.234.200/server_app/indicator-backend-ocr:latest
     ports:
       - 25001:5000
+    environment:
+      - MYSQL_HOSTNAME=172.16.234.200
+      - MYSQL_PORT=3306
+      - MYSQL_USERNAME=indicator
+      - MYSQL_PASSWORD=MYSQL_indicator
+      - MYSQL_DBNAME=indicator
   redis:
-    container_name: indicator-reids
     image: redis:alpine
-    ports:
-      - 25639:6379
     command:
       --requirepass "jzy"
-  mysql:
-    container_name: indicator-mysql
-    image: mysql
-    ports:
-      - 25006:3306
-    environment:
-      MYSQL_ROOT_PASSWORD: jzyismylover
-      MYSQL_DATABASE: indicator

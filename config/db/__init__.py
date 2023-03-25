@@ -14,7 +14,13 @@ with open(FILE_NAME, 'rb') as f:
 
 # mysql 区分开发、生产环境
 if os.path.exists('/.dockerenv'):
-    config = y['pd_db']
+    config = {
+        'username': os.environ['MYSQL_USERNAME'],
+        'hostname': os.environ['MYSQL_HOSTNAME'],
+        'port': os.environ['MYSQL_PORT'],
+        'password': os.environ['MYSQL_PASSWORD'],
+        'dbname': os.environ['MYSQL_DBNAME']
+    }
 else:
     config = y['de_db']
 SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://{}:{}@{}:{}/{}'.format(
@@ -39,5 +45,4 @@ Base.query = db_session.query_property()
 def init_db():
     # 函数中 import 对应的数据模型统一使用 create_all 创建
     import config.db.user
-
     Base.metadata.create_all(bind=engine)
