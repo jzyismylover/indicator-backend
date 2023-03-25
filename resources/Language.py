@@ -6,6 +6,7 @@ from flask import Blueprint
 from flask_restful import Api
 from flask_restful import Resource, fields, request, reqparse, marshal
 from utils.jwt import check_premission
+from utils.json_response import make_success_response
 
 """iso-639 中英文映射"""
 LAN_MAPPER = {}
@@ -36,7 +37,7 @@ class LanguageRec(Resource):
         if ans in LAN_MAPPER:
             lg_name = LAN_MAPPER[ans]
         dic = {'lg_type': ans, 'lg_name': lg_name, 'lg_text': text}
-        return marshal(dic, fields_dict, envelope='data')
+        return dic
 
     def parse_pdf_file(self, file):
         content = ''
@@ -64,20 +65,24 @@ class LanguageRec(Resource):
     def post(self):
         text = self.parser.parse_args()['text']
         if text is not None:
-            return self.return_lg_type(langid.classify(text)[0], text)
+            return make_success_response(self.return_lg_type(langid.classify(text)[0], text))
         else:
-            file = request.files['file']
-            dir_name = file.filename.split('.')[1]
-            if dir_name == 'pdf':
-                content = self.parse_pdf_file(file)
-            elif dir_name == 'docx':
-                content = self.parse_docx_file(file)
-            else:
-                content = self.parse_ordinary_file(file)
+            ans = []
+            files = request.files.getlist('file')
+            for file in files:
+                dir_name = file.filename.split('.')[1]
+                if dir_name == 'pdf':
+                    content = self.parse_pdf_file(file)
+                elif dir_name == 'docx':
+                    content = self.parse_docx_file(file)
+                else:
+                    content = self.parse_ordinary_file(file)
+                lg_type = langid.classify(content[0:1000])[0]
+                ans.append(self.return_lg_type(lg_type, content))
 
-            return self.return_lg_type(langid.classify(content[0:1000])[0], content)
+            return make_success_response(ans)
 
 langrc_blueprint = Blueprint('langrc', __name__, url_prefix='/api')
-langrc_blueprint.before_app_request(check_premission)
+# langrc_blueprint.before_request(check_premission)
 langrc_api = Api(langrc_blueprint)
 langrc_api.add_resource(LanguageRec, '/langrc')
