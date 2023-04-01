@@ -23,17 +23,15 @@ def init_redis(*, app) -> FlaskRedis:
     return FlaskRedis(app)
 
 
-# redis key prefix
 KEY = 'indicator%'
 
-
-def mark_dyn_data(id, data):
+def mark_dyn_data(id, data, expire=3600):
     """redis 存储数据"""
     from setup import redis_client
 
     user_id = str(id)
     data = pickle.dumps(data)
-    expires = int(time.time()) + 3600
+    expires = int(time.time()) + expire
     data_key = KEY + user_id
     try:
         p = redis_client.pipeline()
