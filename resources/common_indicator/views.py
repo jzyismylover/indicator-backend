@@ -1,119 +1,154 @@
 import hashlib
-from flask_restful import Resource, reqparse, fields, marshal
+from flask_restful import Resource, reqparse, abort
 from config import get_dyn_data, mark_dyn_data
 from resources.common_indicator.util import *
+from utils.jwt import check_premission
+from utils.json_response import make_error_response
 
 parser = reqparse.RequestParser()
-parser.add_argument('lg_type', type=str, required=True, location='form')
-parser.add_argument('lg_text', type=str, required=True, location='form')
+# actually it must be application/json
+parser.add_argument('list', location='form')
+parser.add_argument('lg_type', type=str, location='form')
+parser.add_argument('lg_text', type=str, location='form')
 
 
+# 文本hash散列函数
 def generateHash(text: str):
-    """生成唯一 hash 码"""
     hash_model = hashlib.md5()
     hash_model.update(text.encode('utf-8'))
     return hash_model.hexdigest()
 
 
-def getParams(parser = parser) -> CommonIndicatorHandler:
-    """统一获取接口参数"""
-    params = parser.parse_args()
-    lg_type = params['lg_type']
-    lg_text = params['lg_text']
-    hash_value = generateHash(lg_type + lg_text)
-    handler = getLanguageHandler(lg_text, lg_type, hash_value=hash_value)
-    return handler
+def getParams(parser=parser, id=None, use_redis=True) -> CommonIndicatorHandler:
+    def getParamsHandler(lg_text, lg_type, id):
+        hash_value = generateHash(lg_type + lg_text)
+        handler = getLanguageHandler(lg_text, lg_type, id, hash_value=hash_value, use_redis=use_redis)
+        return handler
 
-def getLanguageHandler(lg_text, lg_type, *, hash_value=''):
-    """实例化多语种文本处理类"""
-    handler = None
+    # params = request.get_json()
+    params = parser.parse_args()
+    # 兼容单文本传入
+    if params['list'] is None:
+        params = parser.parse_args()
+        lg_type = params['lg_type']
+        lg_text = params['lg_text']
+        # 无文本上传
+        if lg_text is '':
+            return abort(400, **make_error_response(msg='内容为空'))
+        handler = getParamsHandler(lg_text, lg_type, id)
+        return handler
+    # 多文本传入
+    else:
+        lists = params['list']
+        handlers = []
+        for item in lists:
+            print(item)
+            handler = getParamsHandler(item['lg_text'], item['lg_type'], id)
+            handlers.append(handler)
+        return handlers
+
+
+def getLanguageHandler(lg_text, lg_type, id, *, hash_value='', use_redis):
+    if use_redis is False:
+        return CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
     try:
+        # redis连接错误
         handler = get_dyn_data(hash_value)
         if handler == None:
             handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
             mark_dyn_data(hash_value, handler)
     except Exception as e:
         handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
-        pass
+
     return handler
 
 
 def handleIndicatorReturn(**kargs):
-    return {
-        'data': {
-            kargs['type']: kargs['value']
-        }
-    }
+    return {'data': {kargs['type']: kargs['value']}}
 
 
+# 多语种分词接口
 class Tokenizen(Resource):
-    """提供多语种分词接口"""
     def post(self):
-        handler = getParams()
-        return {
-            "data": {
-                "ans": handler.handleTokenizen()
-            }
-        }
+        handler = getParams(use_redis=False)
+        return {"data": {"ans": handler.handleTokenizen()}}
 
+
+# 多语种词性标注接口
 class SpeechTagging(Resource):
-    """提供多语种词性标注接口"""
     def post(self):
-        handler = getParams()
-        return {
-            "data": {
-                "ans": handler.handleSpeechTagging()
-            }
-        }
+        handler = getParams(use_redis=False)
+        return {"data": {"ans": handler.handleSpeechTagging()}}
+
 
 """
 具体指标计算视图
 """
-class TotalWords(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
-        total_words = len(handler.words)
 
-        return handleIndicatorReturn(value=total_words, type='总词数')
+
+def handleIndicatorCalculate(handler, fn):
+    if isinstance(handler, list) is False:
+        ans = fn(handler)
+    else:
+        ans = []
+        for _ in handler:
+            _ans = fn(_)
+            ans.append(_ans)
+    
+    return ans
+
+class TotalWords(Resource):
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
+        total_words = handleIndicatorCalculate(handler, lambda handler: len(handler.words))
+
+        return handleIndicatorReturn(value=total_words, type='Words(总词数)')
 
 
 class DictWords(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
-        dict_words = len(handler.frequency)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
+        dict_words = handleIndicatorCalculate(handler, lambda handler: len(handler.frequency))
 
-        return handleIndicatorReturn(value=dict_words, type='词典数')
+        return handleIndicatorReturn(value=dict_words, type='Dicts(词典数)')
 
 
 class HapaxWords(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
-        dict_words = len(handler.hapax)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
+        dict_words = handleIndicatorCalculate(handler, lambda handler: len(handler.hapax))
 
-        return handleIndicatorReturn(value=dict_words, type='单现词数')
+        return handleIndicatorReturn(value=dict_words, type='hapaxWords(单现词数)')
+
 
 class TTRValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
-        ans = handler.getTTRValue()
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
+        ans = handleIndicatorCalculate(handler, lambda handler: handler.getTTRValue())
 
-        return handleIndicatorReturn(value=ans, type='TTR')
-
+        return handleIndicatorReturn(value=ans, type='TTR(型例比)')
 
 class HPoint(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         h_point = handler.getHPoint()
 
-        return handleIndicatorReturn(value=h_point, type='Hpoint')
+        return handleIndicatorReturn(value=h_point, type='Hpoint(h点)')
 
 
 class EntropyValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
+
         H = handler.getEntroyValue()
 
-        return handleIndicatorReturn(value=H, type='Entropy')
+        return handleIndicatorReturn(value=H, type='Entropy(文本熵)')
 
 
 """
@@ -122,149 +157,168 @@ class EntropyValue(Resource):
 
 
 class R1Value(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         R1 = handler.getR1Value()
 
-        return handleIndicatorReturn(value=R1, type='R1')
+        return handleIndicatorReturn(value=R1, type='R1(词汇丰富度)')
 
 
 class RRValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         RR = handler.getRRValue()
 
-        return handleIndicatorReturn(value=RR, type='RR')
+        return handleIndicatorReturn(value=RR, type='RR(重复率)')
 
 
 class RRmcValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         RRmc = handler.getRRmcValue()
 
-        return handleIndicatorReturn(value=RRmc, type='RRmc')
+        return handleIndicatorReturn(value=RRmc, type='RRmc(相对重复率)')
 
 
 class TCValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         Tr = handler.getTCValue()
 
-        return handleIndicatorReturn(value=Tr, type='TC')
+        return handleIndicatorReturn(value=Tr, type='TC(主题集中度)')
 
 
 class SecondaryTCValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         Tr = handler.getSecondTCValue()
 
-        return handleIndicatorReturn(value=Tr, type='Secondary')
+        return handleIndicatorReturn(value=Tr, type='Secondary(次级主题集中度)')
 
 
 class ActivityValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
-        activity = handler.getAcitvityValue( )
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
+        activity = handler.getAcitvityValue()
 
-        return handleIndicatorReturn(value=activity, type='Activity')
+        return handleIndicatorReturn(value=activity, type='Activity(活动度)')
 
 
 class DescriptivityValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         descriptivity = handler.getDescriptivityValue()
 
-        return handleIndicatorReturn(value=descriptivity, type='Descriptivity')
+        return handleIndicatorReturn(value=descriptivity, type='Descriptivity(描写度)')
 
 
 class LValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         L = handler.getLValue()
 
-        return handleIndicatorReturn(value=L, type='L')
+        return handleIndicatorReturn(value=L, type='L(文本中词的秩序分布欧氏距离)')
 
 
 class CurveLengthValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         R = handler.getCurveLengthValue()
 
-        return handleIndicatorReturn(value=R, type='Curve Length R Index')
+        return handleIndicatorReturn(value=R, type='Curve Length R Index(文本中词的秩序分布R指数)')
 
 
 class LambdaValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         lambda_v = handler.getLambdaValue()
 
-        return handleIndicatorReturn(value=lambda_v, type='lambda')
+        return handleIndicatorReturn(value=lambda_v, type='lambda(文本Lambda值)')
 
 
 class AdjustedModuleValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         A = handler.getAdjustModuleValue()
 
-        return handleIndicatorReturn(value=A, type='Adjusted Modules')
+        return handleIndicatorReturn(value=A, type='Adjusted Modules(校正模数)')
 
 
 class GiniValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         G = handler.getGiniValue()
 
-        return handleIndicatorReturn(value=G, type='G')
+        return handleIndicatorReturn(value=G, type='G(基尼系数)')
 
 
 class R4Value(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         R4 = handler.getR4Value()
 
-        return handleIndicatorReturn(value=R4, type='R4')
+        return handleIndicatorReturn(value=R4, type='R4(基尼系数补数)')
 
 
 class HapaxValue(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         rate = handler.getHapaxValue()
 
-        return handleIndicatorReturn(value=rate, type='Hapax Percentage')
+        return handleIndicatorReturn(value=rate, type='Hapax Percentage(单现词占比)')
 
 
 class WriterView(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         cosa = handler.getWriterView()
 
-        return handleIndicatorReturn(value=cosa, type='Writer\'s View')
+        return handleIndicatorReturn(value=cosa, type='Writer\'s View(作者视野)')
 
 
 class VerbDistance(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
+    @check_premission
+    def post(self, info):
+        handler = getParams(parser=parser, id=info['user_id'])
         verb_V = handler.getVerbDistance()
 
-        return handleIndicatorReturn(value=verb_V, type='Verb Distances')
+        return handleIndicatorReturn(value=verb_V, type='Verb Distances(动词间距)')
 
 
-class ZipfTest(Resource):
-    def post(self):
-        handler = getParams(parser=parser)
-        zipf = handler.getZipf()
-        current_fields = {str(x): fields.Float for x in zipf.keys()}
+# class ZipfTest(Resource):
+#     @check_premission
+#     def post(self, info):
+#         handler = getParams(parser=parser, id=info['user_id'])
+#         zipf = handler.getZipf()
+#         current_fields = {str(x): fields.Float for x in zipf.keys()}
 
-        return handleIndicatorReturn(
-            value=zipf, fields=current_fields, type='Zipf Test'
-        )
+#         return handleIndicatorReturn(
+#             value=zipf, fields=current_fields, type='Zipf Test'
+#         )
 
 
 class ALLCommonIndicator(Resource):
-    def post(self):
+    @check_premission
+    def post(self, info):
         import datetime
+
         start_time = datetime.datetime.now()
-        handler = getParams(parser=parser)
+        handler = getParams(parser=parser, id=info['user_id'])
         h = handler.getHPoint()
         Activity = handler.getAcitvityValue()
         G = handler.getGiniValue()
@@ -274,27 +328,27 @@ class ALLCommonIndicator(Resource):
 
         return {
             'data': {
-                'Words': len(handler.words),
-                'Dicts': len(handler.frequency),
-                'HapaxWords': len(handler.hapax),
-                'Hapax Percentage': len(handler.hapax) / len(handler.words),
-                'TTR': handler.getTTRValue(),
-                'HPoint': h,
-                'Entropy': handler.getEntroyValue(),
-                'R1': handler.getR1Value(),
-                'RR': handler.getRRValue(),
-                'RRmc': handler.getRRmcValue(),
-                'TC': handler.getTCValue(),
-                'SecondTc': handler.getSecondTCValue(),
-                'Activity': Activity,
-                'Descriptivity': 1 - Activity,
-                'L': handler.getLValue(),
-                'Curver Length R Index': handler.getCurveLengthValue(),
-                'Lambda': handler.getLambdaValue(),
-                'G': G,
-                'R4': 1 - G,
-                'Writer\'s View': handler.getWriterView(),
-                'Verb Distances': handler.getVerbDistance(),
+                'Words(总词数)': len(handler.words),
+                'Dicts(词典数)': len(handler.frequency),
+                # 'HapaxWords(单现词数)': len(handler.hapax),
+                'Hapax Percentage(单现词比例)': len(handler.hapax) / len(handler.words),
+                'TTR(型例比)': handler.getTTRValue(),
+                'HPoint(h点)': h,
+                'Entropy(文本熵)': handler.getEntroyValue(),
+                'R1(词汇丰富度)': handler.getR1Value(),
+                'RR(重复率)': handler.getRRValue(),
+                'RRmc(相对重复率)': handler.getRRmcValue(),
+                'TC(主题集中度)': handler.getTCValue(),
+                'SecondTc(次级主题集中度)': handler.getSecondTCValue(),
+                'Activity(活动度)': Activity,
+                'Descriptivity(描写度)': 1 - Activity,
+                'L(文本中词的秩序分布欧氏距离)': handler.getLValue(),
+                'Curver Length R Index(文本中词的秩序分布R指数)': handler.getCurveLengthValue(),
+                'Lambda(文本Lambda值)': handler.getLambdaValue(),
+                'G(基尼系数)': G,
+                'R4(基尼系数补数)': 1 - G,
+                'Writer\'s View(作者视野)': handler.getWriterView(),
+                'Verb Distances(动词间距)': handler.getVerbDistance(),
                 #'Zipf Test': handler.getZipf(),
             }
         }

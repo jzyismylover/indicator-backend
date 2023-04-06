@@ -2,7 +2,7 @@ import math
 from resources.readability_indicator.util.syllables import count
 from resources.readability_indicator.util.po_syllables import portuguese_syllable_count
 from resources.readability_indicator.util.sp_syllables import spanish_syllable_count
-from utils import ENUtils
+from resources.common_indicator.util import LANGUAGE_HANDLER_MAPPER
 
 # 音节计算函数映射列表
 LANGUAGE_SYLLABLES = {
@@ -13,11 +13,15 @@ LANGUAGE_SYLLABLES = {
 
 class Readability:
     def __init__(self, text: str, type: str) -> None:
-        self.handler = ENUtils()
+        self.handler = self.get_handler(type)
         self.sentences = self.handler.get_sentences(text)
         self.words = self.handler.get_words(self.sentences)
         self.type = type
         self.analyze_text()
+
+    def get_handler(self, type):
+        _util = LANGUAGE_HANDLER_MAPPER[type]
+        return _util()
 
     def analyze_text(self):
         self.char_count = self.get_char_count()

@@ -2,6 +2,9 @@ from flask_restful import Api
 from flask import Blueprint
 from utils.jwt import check_premission
 from resources.common_indicator.views import (
+    TotalWords,
+    DictWords,
+    HapaxWords,
     Tokenizen,
     SpeechTagging,
     TTRValue,
@@ -23,15 +26,16 @@ from resources.common_indicator.views import (
     RRmcValue,
     RRValue,
     SecondaryTCValue,
-    ZipfTest,
     ALLCommonIndicator
 )
 
 common_indicator = Blueprint('common', __name__, url_prefix='/common')
-# common_indicator.before_request(check_premission)
 common_api = Api(common_indicator)
 common_api.add_resource(Tokenizen, '/tokenizen')
 common_api.add_resource(SpeechTagging, '/tagging')
+common_api.add_resource(TotalWords, '/totalWords')
+common_api.add_resource(DictWords, '/dictWords')
+common_api.add_resource(HapaxWords, '/hapaxWords')
 common_api.add_resource(TTRValue, '/ttr')
 common_api.add_resource(
     HPoint,
@@ -54,5 +58,4 @@ common_api.add_resource(R4Value, '/r4')
 common_api.add_resource(HapaxValue, '/hapax')
 common_api.add_resource(WriterView, '/writerView')
 common_api.add_resource(VerbDistance, '/verbDistance')
-common_api.add_resource(ZipfTest, '/zipf')
 common_api.add_resource(ALLCommonIndicator, '/all')
