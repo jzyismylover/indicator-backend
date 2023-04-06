@@ -20,7 +20,14 @@ from utils import (
     BengaliUtils,
     PersianUtils,
     ArabyUtils,
-    Turkishutils
+    Turkishutils,
+    CzechUtils,
+    FrenchUtils,
+    GermanyUtils,
+    ItalianUtils,
+    RussianUtils,
+    UklianUtils,
+    SwedishUtils
 )
 
 LANGUAGE_HANDLER_MAPPER = {
@@ -40,7 +47,14 @@ LANGUAGE_HANDLER_MAPPER = {
     'bn': BengaliUtils,
     'fa': PersianUtils,
     'ar': ArabyUtils,
-    'tr': Turkishutils
+    'tr': Turkishutils,
+    'cs': CzechUtils,
+    'fr': FrenchUtils,
+    'dr': GermanyUtils,
+    'it': ItalianUtils,
+    'ru': RussianUtils,
+    'sv': SwedishUtils,
+    'uk': UklianUtils
 }
 
 
@@ -76,6 +90,15 @@ class CommonIndicatorHandler:
             word_tags.append([self.words[i], self.tags[i]])
 
         return word_tags
+    
+    def getTotalWords(self):
+        return len(self.words)
+    
+    def getDictWords(self):
+        return len(self.frequency)
+
+    def getHapaxWords(self):
+        return len(self.hapax)
 
     def getTTRValue(self):
         ans = len(self.frequency) / len(self.words)

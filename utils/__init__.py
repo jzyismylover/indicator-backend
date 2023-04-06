@@ -16,4 +16,12 @@ from utils.useForSpanishInstance import SpanishUtils
 from utils.useForPortugueseInstance import PortugueseUtils
 from utils.useForPersiannstance import PersianUtils
 from utils.useForArabicInstance import ArabyUtils
+from utils.useForCzechInstance import CzechUtils
+from utils.useForFrenchInstance import FrenchUtils
+from utils.useForGermanInstance import GermanyUtils
+from utils.useForItalianInstance import ItalianUtils
+from utils.useForRussianInstance import RussianUtils
+from utils.useForSinhaleseInstance import SinhalaUtils
+from utils.useForSwedishInstance import SwedishUtils
+from utils.useForUklianInstance import UklianUtils
 
