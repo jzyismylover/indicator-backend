@@ -7,7 +7,6 @@ from config.redis import get_dyn_data
 
 SALT = '%INDICATOR_BACKEND%'
 
-
 def create_token(user_id):
     payload = {
         'user_id': user_id,
@@ -28,13 +27,14 @@ def verify_token(token):
     except Exception as e:
         status = 401
         msg = str(e)
+        info = None
 
     return {'msg': msg, 'status': status, 'info': info}
 
 
 # 定义装饰器(校验token)
 def check_premission(fn):
-    @wraps(fn)  # 更新函数 __name__ 签名
+    # @wraps(fn)  # 更新函数 __name__ 签名
     def wrapper(self, *args, **kwargs):
         headers = request.headers
         if 'HTTP_AUTHORIZATION' not in headers.environ:
@@ -47,6 +47,6 @@ def check_premission(fn):
         if auth['status'] == 200:
             return fn(self, auth['info'], *args, **kwargs)
         else:
-            return output_json({'data': {'msg': auth['msg']}}, auth['status'])
+            return make_error_response(msg=auth['msg']), auth['status']
 
     return wrapper
