@@ -45,4 +45,5 @@ Base.query = db_session.query_property()
 def init_db():
     # 函数中 import 对应的数据模型统一使用 create_all 创建
     import config.db.user
+    import config.db.history
     Base.metadata.create_all(bind=engine)
