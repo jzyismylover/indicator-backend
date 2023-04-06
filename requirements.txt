@@ -19,3 +19,6 @@ hanlp
 pyyaml
 pyjwt
 sentry-sdk[flask]
+psutil
+GPUtil
+flask_mail

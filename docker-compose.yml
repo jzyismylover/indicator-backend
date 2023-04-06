@@ -14,3 +14,7 @@ services:
     image: redis:alpine
     command:
       --requirepass "jzy"
+  web:
+    image: 172.16.234.200/server_app/indicator-extraction-tool
+    ports:
+      - 25002:80
