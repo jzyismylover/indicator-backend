@@ -113,6 +113,15 @@ class LWIndex(Resource):
 
         return handleIndicatorReturn(value=ans, type='LWIndex')
 
+class FleschReading(Resource):
+    @check_premission
+    def post(self, info):
+        handler = getHandler(parser=parser, id=info['user_id'])
+        ans = handler.getFleschReading()
+
+        return handleIndicatorReturn(value=ans, type='FleschReading')
+
+
 
 class AllReadability(Resource):
     @check_premission
