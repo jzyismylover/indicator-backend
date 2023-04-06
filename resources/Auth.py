@@ -36,19 +36,16 @@ class UsernameBasedLogin(Resource):
         username, password = params['username'], generate_hash_password(
             params['password']
         )
-        try:
-            with engine.connect() as conn:
+        with engine.connect() as conn:
                 results = conn.execute(select(User).where(User.username == username))
                 results = list(results)
                 if len(results) == 0:
                     return make_error_response(msg='用户名不存在'), 400
                 if password != results[0]['password']:
                     return make_error_response(msg='密码不正确'), 400
-        except Exception as e:
-            print(e)
-            pass
+                row = results[0]
 
-        token = create_token(username, password)
+        token = create_token(row.id)
         return make_success_response(data={'token': token}, msg='登录成功'), 200
 
 
@@ -59,8 +56,7 @@ class EmailBasedLogin(Resource):
         parser.add_argument('password', required=True, location='form')
         params = parser.parse_args()
         email, password = params['email'], generate_hash_password(params['password'])
-        try:
-            with engine.connect() as conn:
+        with engine.connect() as conn:
                 results = conn.execute(select(User).where(User.email == email))
                 results = list(results)
                 if len(results) == 0:
@@ -68,9 +64,6 @@ class EmailBasedLogin(Resource):
                 if password != results[0]['password']:
                     return make_error_response(msg='密码不正确'), 400
                 row = results[0]
-        except:
-            pass
-
         token = create_token(row.id)
         return make_success_response(data={'token': token}, msg='登录成功'), 200
 

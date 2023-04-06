@@ -4,7 +4,7 @@ from flask_restful import Resource, reqparse, Api
 from config.db import engine
 from config.db.user import User
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update, or_
+from sqlalchemy import select, update, or_, and_
 from utils.jwt import check_premission
 from utils.json_response import make_success_response, make_error_response
 from utils.jwt.generateHash import generate_hash_password
@@ -32,7 +32,7 @@ class UpdateUserInfo(Resource):
         # username / email must not in databases
         with Session(engine) as session:
             rows = session.scalars(
-                select(User).where(or_(User.username == username, User.email == email))
+                select(User).where(and_(or_(User.username == username, User.email == email), User.id != info['user_id']))
             ).first()
             if rows is not None:
                 return make_error_response(msg='用户/邮箱已存在'), 400

@@ -5,6 +5,10 @@ import os
 from flask import Blueprint
 from flask_restful import Api
 from flask_restful import Resource, fields, request, reqparse, marshal
+from sqlalchemy.orm import Session
+from sqlalchemy import insert
+from config.db import engine
+from config.db.history import History
 from utils.jwt import check_premission
 from utils.json_response import make_success_response
 
@@ -45,7 +49,7 @@ class LanguageRec(Resource):
             for page in pdf.pages:
                 content += page.extract_text()
 
-        return content 
+        return content
 
     def parse_docx_file(self, file):
         content = ''
@@ -55,17 +59,36 @@ class LanguageRec(Resource):
             content += paragraph.text
 
         return content
-    
+
     def parse_ordinary_file(self, file):
         """
         markdown. txt
         """
         return bytes(file.read()).decode().replace('\n', '').strip()
 
-    def post(self):
+    def mark_history(self, id, type, text):
+        with engine.connect() as conn:
+            conn.execute(
+                insert(History),
+                [
+                    {
+                        'content': text,
+                        'type': type,
+                        'user_id': id
+                    }
+                ],
+            )
+            conn.commit()
+
+    @check_premission
+    def post(self, info):
         text = self.parser.parse_args()['text']
         if text is not None:
-            return make_success_response(self.return_lg_type(langid.classify(text)[0], text))
+            _type = langid.classify(text)[0]
+            self.mark_history(info['user_id'], _type, text)
+            return make_success_response(
+                self.return_lg_type(_type, text)
+            )
         else:
             ans = []
             files = request.files.getlist('file')
@@ -80,9 +103,9 @@ class LanguageRec(Resource):
                 lg_type = langid.classify(content[0:1000])[0]
                 ans.append(self.return_lg_type(lg_type, content))
 
-            return make_success_response(ans)
+            return make_success_response(ans[0])
+
 
 langrc_blueprint = Blueprint('langrc', __name__, url_prefix='/api')
-# langrc_blueprint.before_request(check_premission)
 langrc_api = Api(langrc_blueprint)
 langrc_api.add_resource(LanguageRec, '/langrc')
