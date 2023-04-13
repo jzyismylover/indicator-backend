@@ -19,6 +19,8 @@ class BaseUtils(object):
         frequency = sorted(
             frequency, key=lambda row: (row['num'], row['word']), reverse=True
         )
+
+
         return {
             'frequency': [i for i in map(lambda row: row['num'], frequency)],
             'frequency_words': [i for i in map(lambda row: row['word'], frequency)],

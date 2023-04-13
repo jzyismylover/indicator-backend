@@ -13,7 +13,7 @@ POS_MODEL_PATH = os.path.join(LTP_DATA_DIR, 'pos.model')
 class ZHUtils(BaseUtils):
     def get_sentences(self, text):
         p = re.compile(r'(“.*?”)|(.*?[。！？…]{1,2}”?)')
-        text = text.replace('\n', '')
+        # text = text.replace('\n', '')
         sentences = []
         for i in p.finditer(text):
             temp = ''
@@ -23,6 +23,7 @@ class ZHUtils(BaseUtils):
                 temp += text[k]
             if temp != '':
                 sentences.append(temp)
+
         return sentences
 
     def get_words(self, sentences, is_cut_word=True) -> list:
