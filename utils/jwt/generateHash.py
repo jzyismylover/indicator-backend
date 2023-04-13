@@ -1,6 +1,6 @@
-import re
 import hashlib
 
+# 生成文本 hash
 def generate_hash_password(password, value='indicator'):
     # value 作为混淆字符串
     sha256 = hashlib.sha256(password.encode("utf-8"))
