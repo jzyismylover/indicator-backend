@@ -1,4 +1,12 @@
 import math
+
+from resources.readability_indicator.util.Czech_syllables import Czech_syllables_count
+from resources.readability_indicator.util.French_syllables import French_syllables_count
+from resources.readability_indicator.util.German_syllables import German_syllables_count
+from resources.readability_indicator.util.Italian_syllables import Italian_syllables_count
+from resources.readability_indicator.util.Russian_syllables import Russian_syllables_count
+from resources.readability_indicator.util.Swedish_syllables import Swedish_syllables_count
+from resources.readability_indicator.util.Ukrainian_syllables import Ukrainian_syllables_count
 from resources.readability_indicator.util.syllables import count
 from resources.readability_indicator.util.po_syllables import portuguese_syllable_count
 from resources.readability_indicator.util.sp_syllables import spanish_syllable_count
@@ -8,7 +16,15 @@ from resources.common_indicator.util import LANGUAGE_HANDLER_MAPPER
 LANGUAGE_SYLLABLES = {
     'en': count,
     'es': spanish_syllable_count,
-    'pt': portuguese_syllable_count
+    'pt': portuguese_syllable_count,
+    'cs': Czech_syllables_count,
+    'fr': French_syllables_count,
+    'dr': German_syllables_count,
+    'it': Italian_syllables_count,
+    'ru': Russian_syllables_count,
+    'sv': Swedish_syllables_count,
+    'uk': Ukrainian_syllables_count
+
 }
 
 class Readability:
