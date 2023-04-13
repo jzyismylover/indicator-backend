@@ -5,14 +5,12 @@ import os
 from flask import Blueprint
 from flask_restful import Api
 from flask_restful import Resource, fields, request, reqparse, marshal
-from sqlalchemy.orm import Session
 from sqlalchemy import insert
 from config.db import engine
 from config.db.history import History
 from utils.jwt import check_premission
 from utils.json_response import make_success_response
 
-"""iso-639 中英文映射"""
 LAN_MAPPER = {}
 with open(
     file=os.path.abspath(path=os.path.join('static', 'language.txt')),
@@ -43,7 +41,7 @@ class LanguageRec(Resource):
         dic = {'lg_type': ans, 'lg_name': lg_name, 'lg_text': text}
         return dic
 
-    def parse_pdf_file(self, file):
+    def get_pdf_content(self, file):
         content = ''
         with pdfplumber.open(file) as pdf:
             for page in pdf.pages:
@@ -51,7 +49,7 @@ class LanguageRec(Resource):
 
         return content
 
-    def parse_docx_file(self, file):
+    def get_docx_content(self, file):
         content = ''
         doc = docx.Document(file)
         for paragraph in doc.paragraphs:
@@ -60,7 +58,7 @@ class LanguageRec(Resource):
 
         return content
 
-    def parse_ordinary_file(self, file):
+    def get_oridinary_content(self, file):
         """
         markdown. txt
         """
@@ -70,39 +68,38 @@ class LanguageRec(Resource):
         with engine.connect() as conn:
             conn.execute(
                 insert(History),
-                [
-                    {
-                        'content': text,
-                        'type': type,
-                        'user_id': id
-                    }
-                ],
+                [{'content': text, 'type': type, 'user_id': id}],
             )
             conn.commit()
 
+    def parse_file(self, file):
+        dir_name = file.filename.split('.')[1]
+        if dir_name == 'pdf':
+            content = self.get_pdf_content(file)
+        elif dir_name == 'docx':
+            content = self.get_docx_content(file)
+        else:
+            content = self.get_oridinary_content(file)
+        lg_type = self.get_text_lg_type(content)
+        return [lg_type, content]
+    
+    def get_text_lg_type(self, text):
+        return langid.classify(text[0:1000])[0]
+
     @check_premission
     def post(self, info):
+        ans = None
         text = self.parser.parse_args()['text']
         if text is not None:
-            _type = langid.classify(text)[0]
+            _type = self.get_text_lg_type(text)
             self.mark_history(info['user_id'], _type, text)
-            return make_success_response(
-                self.return_lg_type(_type, text)
-            )
+            return make_success_response(self.return_lg_type(_type, text))
         else:
             ans = []
             files = request.files.getlist('file')
             for file in files:
-                dir_name = file.filename.split('.')[1]
-                if dir_name == 'pdf':
-                    content = self.parse_pdf_file(file)
-                elif dir_name == 'docx':
-                    content = self.parse_docx_file(file)
-                else:
-                    content = self.parse_ordinary_file(file)
-                lg_type = langid.classify(content[0:1000])[0]
+                lg_type, content = self.parse_file(file=file)
                 ans.append(self.return_lg_type(lg_type, content))
-
             return make_success_response(ans[0])
 
 
