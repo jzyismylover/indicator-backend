@@ -11,7 +11,6 @@ from sqlalchemy import select, insert
 from utils.json_response import make_success_response, make_error_response
 
 
-
 # 限制明文密码的长度
 # def verify_passwd(value, name):
 #     ans = re.search(
@@ -122,7 +121,7 @@ class Regist(Resource):
 
 class Logout(Resource):
     @check_premission
-    def post(self):
+    def post(self, info):
         headers = request.headers
         token = headers.environ['HTTP_AUTHORIZATION'][7:]
         mark_dyn_data(token, token)  # 过期时间可以改善为当前 token 剩余时间

@@ -6,6 +6,7 @@ from resources.Test import check_model
 from resources.Auth import user_blueprint
 from resources.Info import info_blueprint
 from resources.UserHistroy import UserHistory
+from resources.open_interface import open_interface_blueprint
 
 
 def init_views(app):
@@ -15,5 +16,6 @@ def init_views(app):
     app.register_blueprint(check_model)
     app.register_blueprint(user_blueprint)
     app.register_blueprint(info_blueprint)
+    app.register_blueprint(open_interface_blueprint)
     api = Api(app)
     api.add_resource(UserHistory, '/getUserHistory')
