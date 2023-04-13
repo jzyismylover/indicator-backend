@@ -7,3 +7,4 @@ class User(Base):
     username = Column(String(32), unique=True, nullable=False)
     password = Column(String(100), nullable=False)
     email = Column(String(50), nullable=False)
+    appid = Column(String(255))
