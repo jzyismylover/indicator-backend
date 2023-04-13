@@ -26,7 +26,7 @@ from resources.common_indicator.views import (
     RRmcValue,
     RRValue,
     SecondaryTCValue,
-    ALLCommonIndicator
+    ALLCommonIndicator,
 )
 
 common_indicator = Blueprint('common', __name__, url_prefix='/common')

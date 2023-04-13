@@ -1,5 +1,5 @@
 import hashlib
-from flask_restful import Resource, reqparse, abort
+from flask_restful import Resource, reqparse, abort, inputs
 from config import get_dyn_data, mark_dyn_data
 from resources.common_indicator.util import *
 from utils.jwt import check_premission
@@ -10,6 +10,7 @@ parser = reqparse.RequestParser()
 parser.add_argument('list', location='form')
 parser.add_argument('lg_type', type=str, location='form')
 parser.add_argument('lg_text', type=str, location='form')
+parser.add_argument('isSplitingText', type=inputs.boolean, location='form')
 
 
 # 文本hash散列函数
@@ -20,45 +21,61 @@ def generateHash(text: str):
 
 
 def getParams(parser=parser, id=None, use_redis=True) -> CommonIndicatorHandler:
-    def getParamsHandler(lg_text, lg_type, id):
+    def getParamsHandler(lg_text, lg_type, id, isSplitingText=False):
         hash_value = generateHash(lg_type + lg_text)
-        handler = getLanguageHandler(lg_text, lg_type, id, hash_value=hash_value, use_redis=use_redis)
+        # replace some \n | \r\b | \\n chars
+        lg_text = lg_text.strip().replace('\n', '').replace('\r', '').replace('\\n', '')
+        handler = getLanguageHandler(
+            lg_text,
+            lg_type,
+            id,
+            hash_value=hash_value,
+            use_redis=use_redis,
+            isSplitingText=isSplitingText,
+        )
         return handler
 
     # params = request.get_json()
     params = parser.parse_args()
+    if params['isSplitingText'] is None:
+        isSplitingText = False
+    else:
+        isSplitingText = params['isSplitingText']
     # 兼容单文本传入
     if params['list'] is None:
         params = parser.parse_args()
         lg_type = params['lg_type']
         lg_text = params['lg_text']
-        # 无文本上传
+        # invalid empty content
         if lg_text is '':
             return abort(400, **make_error_response(msg='内容为空'))
-        handler = getParamsHandler(lg_text, lg_type, id)
+        handler = getParamsHandler(lg_text, lg_type, id, isSplitingText)
         return handler
     # 多文本传入
     else:
         lists = params['list']
         handlers = []
         for item in lists:
-            print(item)
-            handler = getParamsHandler(item['lg_text'], item['lg_type'], id)
+            handler = getParamsHandler(
+                item['lg_text'], item['lg_type'], id, isSplitingText
+            )
             handlers.append(handler)
         return handlers
 
 
-def getLanguageHandler(lg_text, lg_type, id, *, hash_value='', use_redis):
+def getLanguageHandler(
+    lg_text, lg_type, id, *, hash_value='', use_redis, isSplitingText
+):
     if use_redis is False:
-        return CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
+        return CommonIndicatorHandler(text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText)
     try:
-        # redis连接错误
+        # connect error redis
         handler = get_dyn_data(hash_value)
         if handler == None:
-            handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
+            handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText)
             mark_dyn_data(hash_value, handler)
     except Exception as e:
-        handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type)
+        handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText)
 
     return handler
 
@@ -94,14 +111,17 @@ def handleIndicatorCalculate(handler, fn):
         for _ in handler:
             _ans = fn(_)
             ans.append(_ans)
-    
+
     return ans
+
 
 class TotalWords(Resource):
     @check_premission
     def post(self, info):
         handler = getParams(parser=parser, id=info['user_id'])
-        total_words = handleIndicatorCalculate(handler, lambda handler: len(handler.words))
+        total_words = handleIndicatorCalculate(
+            handler, lambda handler: len(handler.words)
+        )
 
         return handleIndicatorReturn(value=total_words, type='Words(总词数)')
 
@@ -110,7 +130,9 @@ class DictWords(Resource):
     @check_premission
     def post(self, info):
         handler = getParams(parser=parser, id=info['user_id'])
-        dict_words = handleIndicatorCalculate(handler, lambda handler: len(handler.frequency))
+        dict_words = handleIndicatorCalculate(
+            handler, lambda handler: len(handler.frequency)
+        )
 
         return handleIndicatorReturn(value=dict_words, type='Dicts(词典数)')
 
@@ -119,7 +141,9 @@ class HapaxWords(Resource):
     @check_premission
     def post(self, info):
         handler = getParams(parser=parser, id=info['user_id'])
-        dict_words = handleIndicatorCalculate(handler, lambda handler: len(handler.hapax))
+        dict_words = handleIndicatorCalculate(
+            handler, lambda handler: len(handler.hapax)
+        )
 
         return handleIndicatorReturn(value=dict_words, type='hapaxWords(单现词数)')
 
@@ -131,6 +155,7 @@ class TTRValue(Resource):
         ans = handleIndicatorCalculate(handler, lambda handler: handler.getTTRValue())
 
         return handleIndicatorReturn(value=ans, type='TTR(型例比)')
+
 
 class HPoint(Resource):
     @check_premission

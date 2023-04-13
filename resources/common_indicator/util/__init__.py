@@ -2,72 +2,28 @@
 通用指标计算函数
 """
 import math
-from utils import (
-    ENUtils,
-    ZHUtils,
-    BaseUtils,
-    IDUtils,
-    TAUtils,
-    JAUtils,
-    THUtils,
-    LAOUtils,
-    BUUtils,
-    VietnaUtils,
-    KAMUtils,
-    KoreanUtils,
-    SpanishUtils,
-    PortugueseUtils,
-    BengaliUtils,
-    PersianUtils,
-    ArabyUtils,
-    Turkishutils,
-    CzechUtils,
-    FrenchUtils,
-    GermanyUtils,
-    ItalianUtils,
-    RussianUtils,
-    UklianUtils,
-    SwedishUtils
-)
-
-LANGUAGE_HANDLER_MAPPER = {
-    'en': ENUtils,
-    'zh': ZHUtils,
-    'ja': JAUtils,
-    'id': IDUtils,
-    'tl': TAUtils,
-    'th': THUtils,
-    'lo': LAOUtils,
-    'my': BUUtils,
-    'vi': VietnaUtils,
-    'km': KAMUtils,
-    'ko': KoreanUtils,
-    'es': SpanishUtils,
-    'pt': PortugueseUtils,
-    'bn': BengaliUtils,
-    'fa': PersianUtils,
-    'ar': ArabyUtils,
-    'tr': Turkishutils,
-    'cs': CzechUtils,
-    'fr': FrenchUtils,
-    'dr': GermanyUtils,
-    'it': ItalianUtils,
-    'ru': RussianUtils,
-    'sv': SwedishUtils,
-    'uk': UklianUtils
-}
+from utils import BaseUtils
+from resources.constant import LANGUAGE_HANDLER_MAPPER
 
 
 class CommonIndicatorHandler:
-    def __init__(self, text, lg_type) -> None:
+    def __init__(self, text, lg_type, isSplitingText=True) -> None:
         self.handler = self.getHandler(lg_type)
-        self.sentences = self.handler.get_sentences(text)
-        self.words = self.handler.get_words(self.sentences)
+        if isSplitingText:
+            self.sentences = text.split(' ')
+            # 中英文不依赖hanlp多任务词性标注
+            if lg_type == 'zh' or lg_type == 'en':
+                self.words = self.sentences
+            else:
+                self.words = self.handler.get_words(self.sentences)
+        else:
+            self.sentences = self.handler.get_sentences(text)
+            self.words = self.handler.get_words(self.sentences)
 
         FRE_ANS = self.handler.get_word_frequency(self.words)
-        self.hapax = FRE_ANS['hapax']
         self.frequency = FRE_ANS['frequency']
         self.frequency_words = FRE_ANS['frequency_words']
+        self.hapax = FRE_ANS['hapax']
 
         self.tags = []
         self.h_value = 0
@@ -90,10 +46,10 @@ class CommonIndicatorHandler:
             word_tags.append([self.words[i], self.tags[i]])
 
         return word_tags
-    
+
     def getTotalWords(self):
         return len(self.words)
-    
+
     def getDictWords(self):
         return len(self.frequency)
 
@@ -192,7 +148,7 @@ class CommonIndicatorHandler:
                 if self.real_words.count(word) != 0:
                     Tr += ((h - (i + 1)) * fr) / (h * (h - 1) * self.frequency[0])
         except:
-            Tr = 0  
+            Tr = 0
 
         return Tr * 2
 
