@@ -1,9 +1,8 @@
 from yaml import safe_load
 import os
 
-
+# 解析 yaml 文件
 def parseYAML(lines: list, n=0, index=0, s=dict()):
-    """解析yaml文件"""
     dic = dict()
     while index < len(lines):
         if s.get(index) is not None:
