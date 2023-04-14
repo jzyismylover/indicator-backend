@@ -1,9 +1,15 @@
 import hashlib
-from flask_restful import Resource, reqparse, abort, inputs
-from config import get_dyn_data, mark_dyn_data
+import uuid
+import pickle
+from openpyxl import Workbook
+from io import BytesIO
+from tempfile import NamedTemporaryFile
+from flask import send_file
+from flask_restful import Resource, reqparse, abort, inputs, request
+from config.redis import get_dyn_data, mark_dyn_data, delete_dyn_data
 from resources.common_indicator.util import *
 from utils.jwt import check_premission
-from utils.json_response import make_error_response
+from utils.json_response import make_error_response, make_success_response
 
 parser = reqparse.RequestParser()
 # actually it must be application/json
@@ -67,15 +73,21 @@ def getLanguageHandler(
     lg_text, lg_type, id, *, hash_value='', use_redis, isSplitingText
 ):
     if use_redis is False:
-        return CommonIndicatorHandler(text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText)
+        return CommonIndicatorHandler(
+            text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText
+        )
     try:
         # connect error redis
         handler = get_dyn_data(hash_value)
         if handler == None:
-            handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText)
+            handler = CommonIndicatorHandler(
+                text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText
+            )
             mark_dyn_data(hash_value, handler)
     except Exception as e:
-        handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText)
+        handler = CommonIndicatorHandler(
+            text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText
+        )
 
     return handler
 
@@ -350,30 +362,85 @@ class ALLCommonIndicator(Resource):
 
         end_time = datetime.datetime.now()
         print(f'parser time ${end_time - start_time}')
+        
 
-        return {
-            'data': {
-                'Words(总词数)': len(handler.words),
-                'Dicts(词典数)': len(handler.frequency),
-                # 'HapaxWords(单现词数)': len(handler.hapax),
-                'Hapax Percentage(单现词比例)': len(handler.hapax) / len(handler.words),
-                'TTR(型例比)': handler.getTTRValue(),
-                'HPoint(h点)': h,
-                'Entropy(文本熵)': handler.getEntroyValue(),
-                'R1(词汇丰富度)': handler.getR1Value(),
-                'RR(重复率)': handler.getRRValue(),
-                'RRmc(相对重复率)': handler.getRRmcValue(),
-                'TC(主题集中度)': handler.getTCValue(),
-                'SecondTc(次级主题集中度)': handler.getSecondTCValue(),
-                'Activity(活动度)': Activity,
-                'Descriptivity(描写度)': 1 - Activity,
-                'L(文本中词的秩序分布欧氏距离)': handler.getLValue(),
-                'Curver Length R Index(文本中词的秩序分布R指数)': handler.getCurveLengthValue(),
-                'Lambda(文本Lambda值)': handler.getLambdaValue(),
-                'G(基尼系数)': G,
-                'R4(基尼系数补数)': 1 - G,
-                'Writer\'s View(作者视野)': handler.getWriterView(),
-                'Verb Distances(动词间距)': handler.getVerbDistance(),
-                #'Zipf Test': handler.getZipf(),
-            }
+        data = {
+            'Words(总词数)': len(handler.words),
+            'Dicts(词典数)': len(handler.frequency),
+            # 'HapaxWords(单现词数)': len(handler.hapax),
+            'Hapax Percentage(单现词比例)': len(handler.hapax) / len(handler.words),
+            'TTR(型例比)': handler.getTTRValue(),
+            'HPoint(h点)': h,
+            'Entropy(文本熵)': handler.getEntroyValue(),
+            'R1(词汇丰富度)': handler.getR1Value(),
+            'RR(重复率)': handler.getRRValue(),
+            'RRmc(相对重复率)': handler.getRRmcValue(),
+            'TC(主题集中度)': handler.getTCValue(),
+            'SecondTc(次级主题集中度)': handler.getSecondTCValue(),
+            'Activity(活动度)': Activity,
+            'Descriptivity(描写度)': 1 - Activity,
+            'L(文本中词的秩序分布欧氏距离)': handler.getLValue(),
+            'Curver Length R Index(文本中词的秩序分布R指数)': handler.getCurveLengthValue(),
+            'Lambda(文本Lambda值)': handler.getLambdaValue(),
+            'G(基尼系数)': G,
+            'R4(基尼系数补数)': 1 - G,
+            'Writer\'s View(作者视野)': handler.getWriterView(),
+            'Verb Distances(动词间距)': handler.getVerbDistance(),
+            #'Zipf Test': handler.getZipf(),
         }
+        hash_id = uuid.uuid4().__repr__()[6:-3]
+        mark_dyn_data(hash_id, data)
+        data['hash_value'] = hash_id
+
+        return make_success_response(data=data)
+
+
+class DownloadIndicatorsIntoExcel(Resource):
+    @check_premission
+    def post(self, info):
+        if 'hash_value' not in request.form:
+            return make_error_response(msg='hash_value is not is required'), 400
+        hash_value = request.form['hash_value']
+        # find data from redis
+        data = get_dyn_data(hash_value)
+        print(data)
+        delete_dyn_data(hash_value)
+
+        wb = Workbook()
+        ws = wb.active
+        ws['A1'] = '指标名'
+        ws['B1'] = '指标值'
+
+        i = 2
+        for row in data.keys():
+            if row == 'hash_value':
+                continue
+            ws.cell(row=i, column=1).value = row
+            ws.cell(row=i, column=2).value = data[row]
+            i += 1
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        # with NamedTemporaryFile() as tmp:
+        #     wb.save('jzyismylover.xlsx')
+        #     tmp.seek(0)
+        #     stream = tmp.read()
+        print("{} b".format(len(output.getvalue())))
+
+        fv = send_file(
+            output,
+            download_name='indicator.xlsx',
+            as_attachment=True,
+            conditional=True,
+        )
+        # fv.headers[
+        #     'Content-Type'
+        # ] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        # fv.headers["Cache-Control"] = "no-cache"
+        # fv.headers['Content-Disposition'] = 'attachment; filename={}.xlsx'.format(
+        #     'jzyismylover'
+        # )
+
+        return fv

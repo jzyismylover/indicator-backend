@@ -27,6 +27,7 @@ from resources.common_indicator.views import (
     RRValue,
     SecondaryTCValue,
     ALLCommonIndicator,
+    DownloadIndicatorsIntoExcel
 )
 
 common_indicator = Blueprint('common', __name__, url_prefix='/common')
@@ -59,3 +60,4 @@ common_api.add_resource(HapaxValue, '/hapax')
 common_api.add_resource(WriterView, '/writerView')
 common_api.add_resource(VerbDistance, '/verbDistance')
 common_api.add_resource(ALLCommonIndicator, '/all')
+common_api.add_resource(DownloadIndicatorsIntoExcel, '/download')
