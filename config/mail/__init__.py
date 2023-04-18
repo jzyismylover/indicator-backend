@@ -2,29 +2,22 @@ import os
 import uuid
 import time
 from flask_mail import Message, Mail
-from yaml import safe_load
 from config.redis import mark_dyn_data, get_dyn_data
 
-FILE_NAME = os.path.abspath(os.path.join('config', 'mail', 'config.yml'))
-with open(FILE_NAME, 'rb') as f:
-    try:
-        cfg = safe_load(f)
-    except Exception as e:
-        pass
-
+mail = Mail()
 
 def init_mail(app):
     # 初始化发送人信息
-    MAIL_SERVER = cfg['MAIL_SERVER'].strip()
-    MAIL_USERNAME = cfg['MAIL_USERNAME'].strip()
-    MAIL_PASSWORD = cfg['MAIL_PASSWORD'].strip()
-    MAIL_DEFAULT_SENDER = cfg['MAIL_DEFAULT_SENDER'].strip()
+    MAIL_SERVER = os.environ['MAIL_SERVER'].strip()
+    MAIL_USERNAME = os.environ['MAIL_USERNAME'].strip()
+    MAIL_PASSWORD = os.environ['MAIL_PASSWORD'].strip()
+    MAIL_DEFAULT_SENDER = os.environ['MAIL_DEFAULT_SENDER'].strip()
     app.config['MAIL_SERVER'] = MAIL_SERVER
     app.config['MAIL_USERNAME'] = MAIL_USERNAME
     app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
     app.config['MAIL_DEFAULT_SENDER'] = MAIL_DEFAULT_SENDER
 
-    mail = Mail(app)
+    mail.init_app(app)
     return mail
 
 
@@ -40,9 +33,9 @@ def sendCaptcha(email: str):
         return {
             'message': '验证码发送成功'
         }
-    except:
+    except Exception as e:
         return {
-            'message': '验证码发送失败'
+            'message': '发送失败'
         }
 
 
