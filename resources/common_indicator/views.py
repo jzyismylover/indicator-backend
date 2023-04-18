@@ -1,9 +1,7 @@
 import hashlib
 import uuid
-import pickle
 from openpyxl import Workbook
 from io import BytesIO
-from tempfile import NamedTemporaryFile
 from flask import send_file
 from flask_restful import Resource, reqparse, abort, inputs, request
 from config.redis import get_dyn_data, mark_dyn_data, delete_dyn_data
@@ -16,7 +14,7 @@ parser = reqparse.RequestParser()
 parser.add_argument('list', location='form')
 parser.add_argument('lg_type', type=str, location='form')
 parser.add_argument('lg_text', type=str, location='form')
-parser.add_argument('isSplitingText', type=inputs.boolean, location='form')
+parser.add_argument('requireSplit', type=inputs.boolean, location='form')
 
 
 # 文本hash散列函数
@@ -27,7 +25,7 @@ def generateHash(text: str):
 
 
 def getParams(parser=parser, id=None, use_redis=True) -> CommonIndicatorHandler:
-    def getParamsHandler(lg_text, lg_type, id, isSplitingText=False):
+    def getParamsHandler(lg_text, lg_type, id, requireSplit=False):
         hash_value = generateHash(lg_type + lg_text)
         # replace some \n | \r\b | \\n chars
         lg_text = lg_text.strip().replace('\n', '').replace('\r', '').replace('\\n', '')
@@ -37,16 +35,16 @@ def getParams(parser=parser, id=None, use_redis=True) -> CommonIndicatorHandler:
             id,
             hash_value=hash_value,
             use_redis=use_redis,
-            isSplitingText=isSplitingText,
+            requireSplit=requireSplit,
         )
         return handler
 
     # params = request.get_json()
     params = parser.parse_args()
-    if params['isSplitingText'] is None:
-        isSplitingText = False
+    if params['requireSplit'] is None:
+        requireSplit = False
     else:
-        isSplitingText = params['isSplitingText']
+        requireSplit = params['requireSplit']
     # 兼容单文本传入
     if params['list'] is None:
         params = parser.parse_args()
@@ -55,7 +53,7 @@ def getParams(parser=parser, id=None, use_redis=True) -> CommonIndicatorHandler:
         # invalid empty content
         if lg_text is '':
             return abort(400, **make_error_response(msg='内容为空'))
-        handler = getParamsHandler(lg_text, lg_type, id, isSplitingText)
+        handler = getParamsHandler(lg_text, lg_type, id, requireSplit)
         return handler
     # 多文本传入
     else:
@@ -63,30 +61,30 @@ def getParams(parser=parser, id=None, use_redis=True) -> CommonIndicatorHandler:
         handlers = []
         for item in lists:
             handler = getParamsHandler(
-                item['lg_text'], item['lg_type'], id, isSplitingText
+                item['lg_text'], item['lg_type'], id, requireSplit
             )
             handlers.append(handler)
         return handlers
 
 
 def getLanguageHandler(
-    lg_text, lg_type, id, *, hash_value='', use_redis, isSplitingText
+    lg_text, lg_type, id, *, hash_value='', use_redis, requireSplit
 ):
     if use_redis is False:
         return CommonIndicatorHandler(
-            text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText
+            text=lg_text, lg_type=lg_type, requireSplit=requireSplit
         )
     try:
         # connect error redis
         handler = get_dyn_data(hash_value)
         if handler == None:
             handler = CommonIndicatorHandler(
-                text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText
+                text=lg_text, lg_type=lg_type, requireSplit=requireSplit
             )
             mark_dyn_data(hash_value, handler)
     except Exception as e:
         handler = CommonIndicatorHandler(
-            text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText
+            text=lg_text, lg_type=lg_type, requireSplit=requireSplit
         )
 
     return handler
@@ -403,7 +401,6 @@ class DownloadIndicatorsIntoExcel(Resource):
         hash_value = request.form['hash_value']
         # find data from redis
         data = get_dyn_data(hash_value)
-        print(data)
         delete_dyn_data(hash_value)
 
         wb = Workbook()

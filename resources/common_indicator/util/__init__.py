@@ -7,9 +7,9 @@ from resources.constant import LANGUAGE_HANDLER_MAPPER
 
 
 class CommonIndicatorHandler:
-    def __init__(self, text, lg_type, isSplitingText=True) -> None:
+    def __init__(self, text, lg_type, requireSplit=True) -> None:
         self.handler = self.getHandler(lg_type)
-        if isSplitingText:
+        if requireSplit is False:
             self.sentences = text.split(' ')
             # 中英文不依赖hanlp多任务词性标注
             if lg_type == 'zh' or lg_type == 'en':
@@ -124,6 +124,9 @@ class CommonIndicatorHandler:
     def getRRmcValue(self):
         RR = self.getRRValue()
         V = len(self.frequency)
+        division = 1 - 1 / math.sqrt(V)
+        if division == 0:
+            return 0
         RRmc = (1 - math.sqrt(RR)) / (1 - 1 / math.sqrt(V))
 
         return RRmc
@@ -226,6 +229,9 @@ class CommonIndicatorHandler:
                 LR += math.sqrt(distance + 1)
             L += math.sqrt(distance + 1)
 
+        division = L
+        if division == 0:
+            return 1
         R = 1 - LR / L
 
         return R

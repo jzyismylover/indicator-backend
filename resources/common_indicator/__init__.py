@@ -1,6 +1,6 @@
 from flask_restful import Api
 from flask import Blueprint
-from utils.jwt import check_premission
+from resources.common_indicator.MultiTask import MultiProcessCommonIndicator, GetStatue
 from resources.common_indicator.views import (
     TotalWords,
     DictWords,
@@ -61,3 +61,5 @@ common_api.add_resource(WriterView, '/writerView')
 common_api.add_resource(VerbDistance, '/verbDistance')
 common_api.add_resource(ALLCommonIndicator, '/all')
 common_api.add_resource(DownloadIndicatorsIntoExcel, '/download')
+common_api.add_resource(MultiProcessCommonIndicator, '/multifiles')
+common_api.add_resource(GetStatue, '/getStatus')
