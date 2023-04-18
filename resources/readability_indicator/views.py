@@ -1,4 +1,5 @@
 import hashlib
+import uuid
 from flask_restful import Resource, fields, reqparse, marshal
 from config import get_dyn_data, mark_dyn_data
 from resources.readability_indicator.util import Readability
@@ -138,8 +139,7 @@ class AllReadability(Resource):
         DaleChallIndex_Value = handler.getDaleChallIndex()
         LWIndex_Value = handler.getLWIndex()
 
-        return {
-            "data": {
+        data = {
                 "ARI": ARI_Value,
                 "ARIGradeLevels": ARIGradeLevels_Value,
                 "RIX": RIX_Value,
@@ -151,4 +151,8 @@ class AllReadability(Resource):
                 "DaleChallIndex": DaleChallIndex_Value,
                 "LWIndex": LWIndex_Value,
             }
-        }
+        hash_id = uuid.uuid4().__repr__()[6:-3]
+        mark_dyn_data(hash_id, data)
+        data['hash_value'] = hash_id
+
+        return make_success_response(data=data)
