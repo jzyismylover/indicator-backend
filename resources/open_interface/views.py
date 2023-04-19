@@ -86,19 +86,16 @@ class GetAppid(Resource):
 
 class CommonIndicatorsOpenApi(Resource):
     def __init__(self) -> None:
-        from setup import celery
-        _celery = celery
-
         self.files = request.files.getlist('files')
         params = request.form
         if 'indicators' not in params:
             self.indicators = COMMON_INDICATOR_HANDLER_MAPPING.keys()
         else:
             self.indicators = params['indicators'].split(',')
-        if 'isSplitingText' not in params:  # 默认执行分句分词
-            self.isSplitingText = False
+        if 'requireSplit' not in params:  # 默认执行分句分词
+            self.requireSplit = False
         else:
-            self.isSplitingText = self.get_bool_from_form(params['isSplitingText'])
+            self.requireSplit = self.get_bool_from_form(params['requireSplit'])
         if 'cumulatives' not in params:
             self.cumulatives = self.indicators
         else:
@@ -134,7 +131,7 @@ class CommonIndicatorsOpenApi(Resource):
         for file in self.files:
             lg_type, content = language_ins.parse_file(file)
             base_lg_type = lg_type
-            model = CommonIndicatorHandler(content, lg_type, self.isSplitingText)
+            model = CommonIndicatorHandler(content, lg_type, self.requireSplit)
             models.append(model)
             ans = dict()
             ans['filename'] = file.filename
@@ -173,7 +170,7 @@ class CommonIndicatorsOpenApi(Resource):
     @check_app_id
     def post(self):
         ans = self.calculate()
-        results = ans['result']
+        results = ans['results']
         culmulative_dic = ans['culmulative_dic']
         return make_success_response(
             data={
