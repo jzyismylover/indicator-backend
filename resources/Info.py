@@ -61,8 +61,6 @@ class UpdateUserPassword(Resource):
         param = parser.parse_args()
         prev_password = param['prev_password']
         curr_password = param['curr_password']
-        print(generate_hash_password(prev_password))
-        print(generate_hash_password(curr_password))
         try:
             with Session(engine) as session:
                 rows = session.scalars(

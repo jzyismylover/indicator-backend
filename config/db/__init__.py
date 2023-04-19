@@ -50,6 +50,7 @@ def init_db(app):
     # 函数中 import 对应的数据模型统一使用 create_all 创建
     import config.db.user
     import config.db.history
+    import config.db.tasks
     @app.teardown_appcontext
     def shutdown_session(exception=None):
         db_session.remove()

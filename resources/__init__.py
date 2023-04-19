@@ -8,6 +8,7 @@ from resources.Auth import user_blueprint
 from resources.Info import info_blueprint
 from resources.UserHistroy import UserHistory
 from resources.open_interface import open_interface_blueprint
+from resources.multitask import multitask_blueprint
 
 
 def init_views(app):
@@ -18,5 +19,6 @@ def init_views(app):
     app.register_blueprint(user_blueprint)
     app.register_blueprint(info_blueprint)
     app.register_blueprint(open_interface_blueprint)
+    app.register_blueprint(multitask_blueprint)
     api = Api(app)
     api.add_resource(UserHistory, '/getUserHistory')
