@@ -1,7 +1,7 @@
 import sentry_sdk
 import os
 from sentry_sdk.integrations.flask import FlaskIntegration
-from sentry_sdk import capture_exception
+from sentry_sdk import capture_exception, capture_message
 
 def useSentryPlugin():
   # 生产环境开启Sentry监控
@@ -20,3 +20,6 @@ def useSentryPlugin():
 
 def useSentryCaptureError(error: Exception):
     capture_exception(error)
+
+def useSentryCaptureMessage(msg: str):
+    capture_message(msg)

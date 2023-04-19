@@ -1,8 +1,7 @@
 import abc
-import numpy as np
+import torch
 from utils.hanlp import UNIVERSAL_HANLP as Hanlp
-from sentry_sdk import capture_exception
-
+from plugins._sentry import useSentryCaptureError, useSentryCaptureMessage
 
 class BaseUtils(object):
     # GET 词频list
@@ -91,7 +90,10 @@ class BaseUtils(object):
                 words.extend([i for j in ans['tok'] for i in j])
                 tags.extend([i for j in ans['pos'] for i in j])
             except Exception as e:
-                capture_exception(e)
+                if isinstance(e, MemoryError):
+                    useSentryCaptureMessage('当前显存溢出了需要重置')
+                    torch.cuda.empty_cache()
+                useSentryCaptureError(e)
                 pass
             finally:
                 i = i + SENTENCES_LIMIT
