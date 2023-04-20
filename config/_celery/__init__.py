@@ -8,6 +8,7 @@ celery = Celery(
     os.environ['CELERY_NAME'],
     broker=os.environ['CELERY_BROKER_URL'],
     backend=os.environ['CELERY_RESULT_BACKEND'],
+    # result_extended=True
 )
 
 def init_celery(app: Flask):

@@ -41,6 +41,15 @@ def generateBinaryExcelData(lis, indicators):
     return wb
 
 
+def generateBinaryRawTextData(texts: list):
+    content = ' '.join(texts)
+    output = BytesIO()
+    output.write(content.encode())
+    output.seek(0)
+
+    return output
+
+
 @celery.task(name='resources.common_indicator.MultiTask.parse_files')
 def parse_files(files, email):
     files = json.loads(files)
@@ -164,15 +173,33 @@ class DownloadTask(Resource):
         id = request.form['id']
         info = parse_files.AsyncResult(id).info
         info = json.loads(info)
-        wb = generateBinaryExcelData(info['data'], COMMON_INDICATOR_HANDLER_MAPPING.keys())
+        wb = generateBinaryExcelData(
+            info['data'], COMMON_INDICATOR_HANDLER_MAPPING.keys()
+        )
         output = BytesIO()
         wb.save(output)
         output.seek(0)
         print("{} b".format(len(output.getvalue())))
         fv = send_file(
-                output,
-                download_name='indicator.xlsx',
-                as_attachment=True,
-                conditional=True,
+            output,
+            download_name='indicator.xlsx',
+            as_attachment=True,
+            conditional=True,
         )
+        return fv
+
+
+class DownloadTaskDirectory(Resource):
+    # 导出分词处理结果词典(空格形式分隔)
+    @check_premission
+    def post(self, info):
+        id = request.form['id']
+        info = parse_files.AsyncResult(id).info
+        info = json.loads(info)['data']
+        _ = map(lambda row: row['content'], info)
+        output = generateBinaryRawTextData(list(_))
+        fv = send_file(
+            output, download_name='dict.txt', as_attachment=True, conditional=True
+        )
+
         return fv

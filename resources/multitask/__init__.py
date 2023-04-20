@@ -4,7 +4,8 @@ from resources.multitask.views import (
     MultiProcessCommonIndicator, 
     GetTaskLists,
     GetTaskInfo,
-    DownloadTask
+    DownloadTask,
+    DownloadTaskDirectory
 )
 
 multitask_blueprint = Blueprint('multitask', __name__, url_prefix='/multi')
@@ -14,3 +15,4 @@ multitask_api.add_resource(MultiProcessCommonIndicator, '/addTask')
 multitask_api.add_resource(GetTaskInfo, '/getTaskInfo')
 multitask_api.add_resource(GetTaskLists, '/getTasks')
 multitask_api.add_resource(DownloadTask, '/downloadTask')
+multitask_api.add_resource(DownloadTaskDirectory, '/downloadDict')
