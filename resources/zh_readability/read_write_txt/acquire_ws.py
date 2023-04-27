@@ -1,6 +1,4 @@
 # -*- coding:utf-8 -*-
-from method.tools import get_num_of_lines
-
 
 def acquire_cws(sfm, words):
 

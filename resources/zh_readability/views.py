@@ -1,10 +1,12 @@
-from resources.zh_readability.read_write_txt import acquire_pos
+from flask_restful import Resource, request
+from utils.useForChineseInstance import ZHUtils
+from resources.zh_readability.read_write_txt.acquire_pos import acquire_pos
 from resources.zh_readability.data_loader import DataSet
 from resources.zh_readability.get_features.feature1_23 import feature1_23
 from resources.zh_readability.get_features.feature24_63 import feature24_63
-from resources.zh_readability.get_features.feature64_80 import feature64_80
-from resources.zh_readability.get_features.feature81_92 import feature81_92
-from resources.zh_readability.get_features.feature93_102 import feature93_102
+# from resources.zh_readability.get_features.feature64_80 import feature64_80
+# from resources.zh_readability.get_features.feature81_92 import feature81_92
+# from resources.zh_readability.get_features.feature93_102 import feature93_102
 
 
 def deal_pos(data_set):
@@ -32,17 +34,24 @@ def deal_pos(data_set):
 
 
 # 处理 18 features
-class Feature18Main:
-    def __init__(self, raw_text, sentences, words, tags) -> None:
-        deal_pos(data_set)
+class Feature18Main(Resource):
+    def post(self):
+        raw_text = request.form['raw_text']
+        zh_utils = ZHUtils()
+        sentences = zh_utils.get_sentences(raw_text)
+        words = zh_utils.get_words(sentences)
+        tags = zh_utils.get_word_character(words)
         data_set = DataSet(raw_text, sentences, words, tags)
+        deal_pos(data_set)
+
         data_set = feature1_23(data_set)
         data_set = feature24_63(data_set)
-        data_set = feature64_80(data_set)
-        data_set = feature81_92(data_set)
-        data_set = feature93_102(data_set)
-        
+        # data_set = feature64_80(data_set)
+        # data_set = feature81_92(data_set)
+        # data_set = feature93_102(data_set)
+
         return data_set.features_dict
+
 
 # 处理 22 features
 class Feature22Main:

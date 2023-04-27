@@ -4,7 +4,6 @@ from resources.zh_readability.method.lexical_feature_method import LexicalFeatur
 from resources.zh_readability.method.shallow_feature_method import ShallowFeatureMethod
 from resources.zh_readability.method.stroke_feature_method import StrokeFeatureMethod
 # from resources.zh_readability.feature_bean.syntactic_feature import SyntacticFeature
-
 # from resources.zh_readability.method.syntactic_feature_method import SyntacticFeatureMethod
 
 

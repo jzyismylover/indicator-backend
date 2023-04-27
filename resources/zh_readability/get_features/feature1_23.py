@@ -10,7 +10,7 @@ from resources.zh_readability.read_write_txt.acquire_ws import acquire_cws
 
 
 def feature1_23(data_set):
-    v_lines = len(data_set.sentences)
+    v_lines = data_set.v_lines
     all_word = data_set.words
     (
         chinese,
