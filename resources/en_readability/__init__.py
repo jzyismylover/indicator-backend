@@ -1,7 +1,7 @@
 from flask import Blueprint
 from flask_restful import Api
 from utils.jwt import check_premission
-from resources.readability_indicator.views import (
+from resources.en_readability.views import (
     ARI,
     ARIGradeLevels,
     RIX,

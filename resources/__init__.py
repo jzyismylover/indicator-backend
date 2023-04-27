@@ -1,6 +1,5 @@
-import time
-from flask_restful import Api, Resource
-from resources.readability_indicator import readability_indicator
+from flask_restful import Api
+from resources.en_readability import readability_indicator
 from resources.common_indicator import common_indicator
 from resources.Language import langrc_blueprint
 from resources.Test import check_model

@@ -2,7 +2,7 @@ import hashlib
 import uuid
 from flask_restful import Resource, fields, reqparse, marshal
 from config import get_dyn_data, mark_dyn_data
-from resources.readability_indicator.util import Readability
+from resources.en_readability.util import Readability
 from utils.jwt import check_premission
 from utils.json_response import make_success_response
 
