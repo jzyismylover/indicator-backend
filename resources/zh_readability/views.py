@@ -5,8 +5,8 @@ from resources.zh_readability.data_loader import DataSet
 from resources.zh_readability.get_features.feature1_23 import feature1_23
 from resources.zh_readability.get_features.feature24_63 import feature24_63
 # from resources.zh_readability.get_features.feature64_80 import feature64_80
-# from resources.zh_readability.get_features.feature81_92 import feature81_92
-# from resources.zh_readability.get_features.feature93_102 import feature93_102
+from resources.zh_readability.get_features.feature81_92 import feature81_92
+from resources.zh_readability.get_features.feature93_102 import feature93_102
 
 
 def deal_pos(data_set):
@@ -47,8 +47,8 @@ class Feature18Main(Resource):
         data_set = feature1_23(data_set)
         data_set = feature24_63(data_set)
         # data_set = feature64_80(data_set)
-        # data_set = feature81_92(data_set)
-        # data_set = feature93_102(data_set)
+        data_set = feature81_92(data_set)
+        data_set = feature93_102(data_set)
 
         return data_set.features_dict
 

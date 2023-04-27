@@ -40,13 +40,13 @@ class ShallowFeatureMethod:
         return txt_content
 
     @staticmethod
-    def get_character(words) -> str:
+    def get_character(raw_text) -> str:
         """
         函数作用：得到文章的所有字符
         para:文章内容
         return:该文章的所有字符
         """
-        return ''.join(words)
+        return raw_text
 
     @staticmethod
     def get_all_word(words) -> list:
@@ -62,14 +62,15 @@ class ShallowFeatureMethod:
         return all_word
 
     @staticmethod
-    def get_chinese(words: list):
+    def get_chinese(raw_text: str):
         """
         函数作用：得到文章的所有汉字
         para:文章内容
         return:该文章的所有汉字
         """
         chinese = []
-        for each in words:
+        raw_text.replace('\r\n', '').replace('\n', '')
+        for each in raw_text:
             if u'\u4e00' <= each <= u'\u9fa5':
                 chinese.append(each)
         return chinese

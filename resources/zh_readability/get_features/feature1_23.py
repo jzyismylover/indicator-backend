@@ -20,7 +20,17 @@ def feature1_23(data_set):
         three_word,
         four_word,
         more_word,
-    ) = acquire_cws(data_set.sfm, data_set.words)
+    ) = acquire_cws(data_set)
+
+    # print(all_word)
+    # print(v_lines)
+    # print(chinese)
+    # print(ch)
+    # print(one_word)
+    # print(two_word)
+    # print(three_word)
+    # print(four_word)
+    # print(more_word)
 
     (most, second, low, middle, high, strokes) = acquire_stroke(
         data_set.raw_text,
