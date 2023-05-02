@@ -11,7 +11,7 @@ from config.db import engine
 from config.db.user import User
 from resources.Language import LanguageRec, LAN_MAPPER
 from resources.common_indicator.util import CommonIndicatorHandler
-from resources.readability_indicator.util import Readability
+from resources.en_readability.util import Readability
 from resources.constant import (
     COMMON_INDICATOR_HANDLER_MAPPING,
     READABILITY_INDICATOR_HANDLER_MAPPING,
@@ -81,7 +81,12 @@ class GetAppid(Resource):
             stmt = select(User).where(User.id == info['user_id'])
             row = session.scalars(stmt).first()
 
-        return make_success_response(data={'appid': row.appid})
+        if row is None:
+            appid = None
+        else:
+            appid = row.appid
+
+        return make_success_response(data={'appid': appid})
 
 
 class CommonIndicatorsOpenApi(Resource):
