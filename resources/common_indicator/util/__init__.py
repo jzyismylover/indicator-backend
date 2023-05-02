@@ -223,10 +223,12 @@ class CommonIndicatorHandler:
         if self.h_value == 0:
             self.getHPoint()
 
+        h = self.h_value
         for i in range(0, len(f) - 1):
             distance = (f[i] - f[i + 1]) ** 2
-            if i + 1 < self.h_value:
-                LR += math.sqrt(distance + 1)
+            _deviation = (h - f[math.ceil(h)]) ** 2 + (h - math.ceil(h)) ** 2
+            if i + 1 < h:
+                LR = LR +  math.sqrt(distance + 1) + math.sqrt(_deviation)
             L += math.sqrt(distance + 1)
 
         division = L

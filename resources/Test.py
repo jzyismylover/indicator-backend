@@ -2,7 +2,7 @@ import psutil
 import GPUtil
 from flask_restful import Resource, Api
 from flask import Blueprint
-from utils.json_response import make_error_response, make_success_response
+from utils.json_response import make_success_response
 
 
 class DiskCheck(Resource):

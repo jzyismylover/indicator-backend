@@ -384,7 +384,6 @@ class ALLCommonIndicator(Resource):
             'R4(基尼系数补数)': 1 - G,
             'Writer\'s View(作者视野)': handler.getWriterView(),
             'Verb Distances(动词间距)': handler.getVerbDistance(),
-            #'Zipf Test': handler.getZipf(),
         }
         hash_id = uuid.uuid4().__repr__()[6:-3]
         mark_dyn_data(hash_id, data)
@@ -399,9 +398,8 @@ class DownloadIndicatorsIntoExcel(Resource):
         if 'hash_value' not in request.form:
             return make_error_response(msg='hash_value is not is required'), 400
         hash_value = request.form['hash_value']
-        # find data from redis
         data = get_dyn_data(hash_value)
-        delete_dyn_data(hash_value)
+        # delete_dyn_data(hash_value) ## 存在多次下载的情况不能删除
 
         wb = Workbook()
         ws = wb.active
@@ -441,3 +439,11 @@ class DownloadIndicatorsIntoExcel(Resource):
         # )
 
         return fv
+
+class DeleteIndicatorExcelHashCache(Resource):
+    @check_premission
+    def delete(self, info):
+        if 'hash_value' not in request.form:
+            return make_error_response(msg='hash_value param is required'), 400
+        hash_value = request.form['hasg_value']
+        delete_dyn_data(hash_value)
