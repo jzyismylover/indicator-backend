@@ -1,14 +1,19 @@
 # -*- coding:utf-8 -*-
+import jieba
+from utils.hanlp import CON_PARSER
 
+def acquire_cp(data_set):
+    # 获取成分句法树
+    syfm = data_set.syfm
+    sentences = data_set.sentences
+    trees = []
+    for sentence in sentences:
+        words = jieba.cut(sentence)
+        tree = CON_PARSER(words)
+        trees.append(tree)
+    np_result1 = syfm.find_all_terms_by_feature(trees, "NP")
+    pp_result1 = syfm.find_all_terms_by_feature(trees, "PP")
+    vp_result1 = syfm.find_all_terms_by_feature(trees, "VP")
+    ip_sentence, ip = syfm.get_ic_sentence(''.join(trees)) # 获取子从句相关信息
 
-def acquire_cp(syfm, base_cp_dir, file):
-
-    v1_cp_file = open(base_cp_dir + file, "r", encoding="utf-8")
-    cp_content1 = v1_cp_file.readlines()
-    np_result1 = syfm.find_all_terms_by_feature(cp_content1, "NP")
-    pp_result1 = syfm.find_all_terms_by_feature(cp_content1, "PP")
-    vp_result1 = syfm.find_all_terms_by_feature(cp_content1, "VP")
-    ip_sentence, ip = syfm.get_ic_sentence(''.join(cp_content1))
-    v1_cp_file.close()
-
-    return np_result1, vp_result1, pp_result1, ip_sentence, ip
+    return np_result1, vp_result1, pp_result1, ip_sentence, ip, trees

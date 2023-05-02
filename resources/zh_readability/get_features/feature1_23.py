@@ -22,16 +22,6 @@ def feature1_23(data_set):
         more_word,
     ) = acquire_cws(data_set)
 
-    # print(all_word)
-    # print(v_lines)
-    # print(chinese)
-    # print(ch)
-    # print(one_word)
-    # print(two_word)
-    # print(three_word)
-    # print(four_word)
-    # print(more_word)
-
     (most, second, low, middle, high, strokes) = acquire_stroke(
         data_set.raw_text,
         data_set.strokes_method,
@@ -58,58 +48,57 @@ def feature1_23(data_set):
     '''
     输出特征1-26
     '''
-    data_set.features_dict["1|CC-1|"] = round(
-        word_feature.get_percentage_most_word_per_doc(chinese), 4
-    )
-    data_set.features_dict["2|CC-2|"] = round(
-        word_feature.get_percentage_second_word_per_doc(chinese), 4
-    )
-    data_set.features_dict["3|CC-3|"] = round(
-        word_feature.get_percentage_all_most_word_per_doc(chinese), 4
-    )
-    data_set.features_dict["4|CC-4|"] = round(
-        stroke_feature.get_low_stroke_per_doc(chinese), 4
-    )
-    data_set.features_dict["5|CC-5|"] = round(
-        stroke_feature.get_middle_stroke_per_doc(chinese), 4
-    )
-    data_set.features_dict["6|CC-6|"] = round(
-        stroke_feature.get_high_stroke_per_doc(chinese), 4
-    )
+    # data_set.features_dict["1|CC-1|"] = round(
+    #     word_feature.get_percentage_most_word_per_doc(chinese), 4
+    # )
+    # data_set.features_dict["2|CC-2|"] = round(
+    #     word_feature.get_percentage_second_word_per_doc(chinese), 4
+    # )
+    # data_set.features_dict["3|CC-3|"] = round(
+    #     word_feature.get_percentage_all_most_word_per_doc(chinese), 4
+    # )
+    # data_set.features_dict["4|CC-4|"] = round(
+    #     stroke_feature.get_low_stroke_per_doc(chinese), 4
+    # )
+    # data_set.features_dict["5|CC-5|"] = round(
+    #     stroke_feature.get_middle_stroke_per_doc(chinese), 4
+    # )
+    # data_set.features_dict["6|CC-6|"] = round(
+    #     stroke_feature.get_high_stroke_per_doc(chinese), 4
+    # )
     data_set.features_dict["7|CC-7|"] = round(
         stroke_feature.get_average_stroke_per_doc(strokes, chinese), 4
     )
-
     data_set.features_dict["8|WC-8|"] = round(
         chinese_word_feature.get_average_character_per_doc(all_word), 4
     )
     data_set.features_dict["9|WC-9|"] = round(
         chinese_word_feature.get_unique_average_character_per_doc(all_word), 4
     )
-    data_set.features_dict["10|WC-10|"] = round(
-        gram_word_feature.get_num_of_two_word(), 4
-    )
-    data_set.features_dict["11|WC-11|"] = round(
-        gram_word_feature.get_percentage_two_word_per_doc(all_word), 4
-    )
-    data_set.features_dict["12|WC-12|"] = round(
-        gram_word_feature.get_num_of_three_word(), 4
-    )
+    # data_set.features_dict["10|WC-10|"] = round(
+    #     gram_word_feature.get_num_of_two_word(), 4
+    # )
+    # data_set.features_dict["11|WC-11|"] = round(
+    #     gram_word_feature.get_percentage_two_word_per_doc(all_word), 4
+    # )
+    # data_set.features_dict["12|WC-12|"] = round(
+    #     gram_word_feature.get_num_of_three_word(), 4
+    # )
     data_set.features_dict["13|WC-13|"] = round(
         gram_word_feature.get_percentage_three_word_per_doc(all_word), 4
     )
-    data_set.features_dict["14|WC-14|"] = round(
-        gram_word_feature.get_num_of_four_word(), 4
-    )
-    data_set.features_dict["15|WC-15|"] = round(
-        gram_word_feature.get_percentage_four_word_per_doc(all_word), 4
-    )
-    data_set.features_dict["16|WC-16|"] = round(
-        gram_word_feature.get_num_of_more_word(), 4
-    )
-    data_set.features_dict["17|WC-17|"] = round(
-        gram_word_feature.get_percentage_more_word_per_doc(all_word), 4
-    )
+    # data_set.features_dict["14|WC-14|"] = round(
+    #     gram_word_feature.get_num_of_four_word(), 4
+    # )
+    # data_set.features_dict["15|WC-15|"] = round(
+    #     gram_word_feature.get_percentage_four_word_per_doc(all_word), 4
+    # )
+    # data_set.features_dict["16|WC-16|"] = round(
+    #     gram_word_feature.get_num_of_more_word(), 4
+    # )
+    # data_set.features_dict["17|WC-17|"] = round(
+    #     gram_word_feature.get_percentage_more_word_per_doc(all_word), 4
+    # )
 
     data_set.features_dict[
         "18|SC-18|"
@@ -120,9 +109,9 @@ def feature1_23(data_set):
     data_set.features_dict[
         "20|SC-20|"
     ] = chinese_word_feature.get_average_chinese_per_sentence(v_lines)
-    data_set.features_dict[
-        "21|SC-21|"
-    ] = chinese_word_feature.get_average_character_per_sentence(v_lines)
+    # data_set.features_dict[
+    #     "21|SC-21|"
+    # ] = chinese_word_feature.get_average_character_per_sentence(v_lines)
 
     data_set.features_dict["22|D-22|"] = round(
         chinese_word_feature.get_num_of_all_chinese(), 4
