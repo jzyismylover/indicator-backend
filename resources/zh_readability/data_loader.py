@@ -3,8 +3,8 @@ import os
 from resources.zh_readability.method.lexical_feature_method import LexicalFeatureMethod
 from resources.zh_readability.method.shallow_feature_method import ShallowFeatureMethod
 from resources.zh_readability.method.stroke_feature_method import StrokeFeatureMethod
-# from resources.zh_readability.feature_bean.syntactic_feature import SyntacticFeature
-# from resources.zh_readability.method.syntactic_feature_method import SyntacticFeatureMethod
+from resources.zh_readability.feature_bean.syntactic_feature import SyntacticFeature
+from resources.zh_readability.method.syntactic_feature_method import SyntacticFeatureMethod
 
 
 class DataSet:
@@ -22,8 +22,8 @@ class DataSet:
         self.lfm = LexicalFeatureMethod(words, tags)  # 词汇特征
         self.sfm = ShallowFeatureMethod()
         self.strokes_method = StrokeFeatureMethod()  # 笔画特征
-        # self.syfm = SyntacticFeatureMethod() # 句法特征
-        # self.sf = SyntacticFeature()  #
+        self.syfm = SyntacticFeatureMethod() # 句法特征
+        self.sf = SyntacticFeature()  #
         self.strokes_list = self.strokes_method.get_model()  # 获得汉字笔画大全的列表
         (
             self.most_com_word,

@@ -45,6 +45,16 @@ def feature1_23(data_set):
         one_word, two_word, three_word, four_word, more_word
     )
 
+    print(chinese)
+    print(len(chinese))
+    print(all_word)
+    print(len(all_word))
+    print(one_word)
+    print(two_word)
+    print(three_word)
+    print(four_word)
+    print(more_word)
+
     '''
     输出特征1-26
     '''

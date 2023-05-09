@@ -3,6 +3,9 @@ from resources.zh_readability.method.word_feature_method import word_feature
 
 
 def feature24_63(data_set):
+    print('---- 词性相关 ----')
+    print(data_set.n)
+
     # 形容词
     word_list = data_set.a
     (feature_1, feature_2, feature_3, feature_4, feature_5) = word_feature(

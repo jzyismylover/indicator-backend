@@ -80,7 +80,7 @@ class SyntacticFeatureMethod:
     def count_high_of_tree(trees):
         trees_height = []
         for tree in trees:
-            trees_height.append(tree.height)
+            trees_height.append(tree.height())
 
         return trees_height
 

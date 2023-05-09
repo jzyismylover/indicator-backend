@@ -73,12 +73,12 @@ class Feature18Main(Resource):
             + 0.3473 * feature_dir['20|SC-20|']
             + 1.4679 * feature_dir['7|CC-7|']
         )
-
+        
         return make_success_response(data={'level': _readability})
 
 
 # 基于22个显著特征的可读性测度线性回归模型
-class Feature22Main:
+class Feature22Main(Resource):
     def post(self):
         raw_text = request.form['raw_text']
         zh_utils = ZHUtils()
@@ -93,7 +93,7 @@ class Feature22Main:
         data_set = feature64_80(data_set)
         data_set = feature81_92(data_set)
         data_set = feature93_102(data_set)
-        feature_dir = data_set.feature_dir
+        feature_dir = data_set.features_dict
 
         _readability = (
             -8.9283
@@ -116,9 +116,10 @@ class Feature22Main:
             - 0.2996 * feature_dir['18|SC-18|']
             - 0.3681 * feature_dir['19|SC-19|']
             + 0.3550 * feature_dir['20|SC-20|']
-            - 0.0024 * feature_dir['2|D-22|']
+            - 0.0024 * feature_dir['22|D-22|']
             + 0.0023 * feature_dir['23|D-23|']
             + 1.611 * feature_dir['7|CC-7|']
         )
 
-        return make_success_response(data={'level': _readability})
+        return feature_dir
+        # return make_success_response(data={'level': _readability})

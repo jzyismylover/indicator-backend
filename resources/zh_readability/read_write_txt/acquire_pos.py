@@ -15,7 +15,7 @@ def acquire_pos(dataset):
     c1 = lfm.get_feature("c")  # 连词
     b1 = lfm.get_feature("b")  # 区别词
     i1 = lfm.get_feature("i")  # 习语或者成语
-    n1 = lfm.get_feature("n ")  # 普通名词
+    n1 = lfm.get_feature("n")  # 普通名词
 
     all_noun_pattern = ["nl", "ni", "ns", "nt", "nz", "n ", "nd", "nh"]  # 所有的名词
     all_noun1 = lfm.get_multi_feature(all_noun_pattern)
