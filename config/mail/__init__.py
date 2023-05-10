@@ -22,8 +22,6 @@ def init_mail(app):
 
 
 def sendCaptcha(email: str):
-    from setup import mail
-
     try:
         captcha = str(uuid.uuid4().hex)[:6]
         mark_dyn_data(email, {'update_time': time.time(), 'code': captcha})

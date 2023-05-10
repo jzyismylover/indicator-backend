@@ -16,17 +16,16 @@ def get_redis_path():
     
     return redis_path
 
+redis_client = FlaskRedis()
+
 def init_redis(app) -> FlaskRedis:
     redis_path  = get_redis_path()
     app.config['REDIS_URL'] = redis_path
-    return FlaskRedis(app)
+    return redis_client.init_app(app)
 
 
 KEY = 'indicator%'
 def mark_dyn_data(id, data, expire=3600):
-    # store redis data
-    from setup import redis_client
-
     user_id = str(id)
     data = pickle.dumps(data)
     expires = int(time.time()) + expire
@@ -41,9 +40,6 @@ def mark_dyn_data(id, data, expire=3600):
 
 
 def get_dyn_data(id):
-    # get redis data
-    from setup import redis_client
-
     id = str(id)
     data_key = KEY + id
     try:
@@ -57,9 +53,6 @@ def get_dyn_data(id):
 
 
 def delete_dyn_data(id):
-    # delete redis data
-    from setup import redis_client
-
     id = str(id)
     data_key = KEY + id
     try:
