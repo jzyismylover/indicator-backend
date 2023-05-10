@@ -1,11 +1,12 @@
 import json
 import uuid
 import time
+from datetime import datetime
 from io import BytesIO
 from flask import send_file
 from flask_mail import Message
 from openpyxl import Workbook
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, delete
 from flask_restful import Resource, request
 from resources.Language import LanguageRec
 from werkzeug.datastructures import FileStorage
@@ -13,6 +14,7 @@ from resources.common_indicator.util import CommonIndicatorHandler
 from resources.constant import (
     COMMON_INDICATOR_HANDLER_MAPPING,
 )
+from config._schedule import scheduler
 from config._celery import celery
 from config.mail import mail
 from config.db import engine
@@ -20,7 +22,6 @@ from config.db.user import User
 from config.db.tasks import Task
 from utils.jwt import check_premission
 from utils.json_response import make_success_response
-
 
 language_ins = LanguageRec()
 
@@ -50,7 +51,24 @@ def generateBinaryRawTextData(texts: list):
     return output
 
 
-@celery.task(name='resources.common_indicator.MultiTask.parse_files')
+# 设置定时任务，定时清除过期redis缓存处理数据
+@scheduler.task('cron', id='clear_redis', hour='*/3')
+def clear_redis_cache():
+    _now_day = time.gmtime().tm_mday
+    with engine.connect() as conn:
+        stmt = (
+            select(Task)
+        )
+        taskLists = list(conn.execute(stmt))
+    with engine.begin() as conn:
+        for _ in taskLists:
+              _pre_day = datetime.strptime(_.update_time, '%Y-%m-%d').day
+              if _now_day - _pre_day >= 1:
+                stmt = delete(Task).where(Task.id == _.id)
+                conn.execute(stmt)
+
+# 设置celery后台任务，异步后台执行密集计算任务
+@celery.task(name='parse_files')
 def parse_files(files, email):
     files = json.loads(files)
     lis = []
@@ -67,19 +85,20 @@ def parse_files(files, email):
         ans = dict()
         ans['filename'] = filename
         ans['content'] = ' '.join(model.words)
-
+        
+        # 计算指定指标
         indicators = COMMON_INDICATOR_HANDLER_MAPPING.keys()
         for _ in indicators:
             if _ not in COMMON_INDICATOR_HANDLER_MAPPING:
                 continue
             func = getattr(model, COMMON_INDICATOR_HANDLER_MAPPING[_], None)
-            # 非增量指标累计
             score = func()
             ans[_] = score
 
         lis.append(ans)
 
     try:
+        # 发送结果附件到邮箱
         wb = generateBinaryExcelData(lis, indicators)
         output = BytesIO()
         wb.save(output)
@@ -156,7 +175,8 @@ class GetTaskLists(Resource):
         with engine.connect() as conn:
             results = conn.execute(select(Task).where(Task.user_id == user_id))
             results = list(results)
-
+        
+        # celery 任务默认有效时间为 24 hour
         ans = []
         for _ in results:
             info = parse_files.AsyncResult(_.id)
@@ -179,7 +199,6 @@ class DownloadTask(Resource):
         output = BytesIO()
         wb.save(output)
         output.seek(0)
-        print("{} b".format(len(output.getvalue())))
         fv = send_file(
             output,
             download_name='indicator.xlsx',

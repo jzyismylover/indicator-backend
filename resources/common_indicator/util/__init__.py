@@ -10,13 +10,11 @@ class CommonIndicatorHandler:
     def __init__(self, text, lg_type, requireSplit=True) -> None:
         self.handler = self.getHandler(lg_type)
         if requireSplit is False:
-            self.sentences = text.split(' ')
-            # 中英文不依赖hanlp多任务词性标注
-            if lg_type == 'zh' or lg_type == 'en':
-                self.words = self.sentences
-            else:
-                self.words = self.handler.get_words(self.sentences)
+            # 传入词典文本
+            self.sentences = [] # 词典句子数默认为 0
+            self.words = text.split(' ')
         else:
+            # 传入原文本
             self.sentences = self.handler.get_sentences(text)
             self.words = self.handler.get_words(self.sentences)
 

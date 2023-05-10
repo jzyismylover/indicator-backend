@@ -7,9 +7,6 @@ def feature64_80(data_set):
         acquire_cp(data_set)
     tree_result = data_set.syfm.count_high_of_tree(trees) # 得到整篇文章句法树集合
 
-    print('ppresult')
-    print(data_set.pp_result)
-
     # 短语
     data_set.features_dict["71|P-71|"] = round(data_set.sf.get_average_length_word_phrase(data_set.pp_result), 4)
 

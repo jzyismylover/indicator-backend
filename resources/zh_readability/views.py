@@ -121,5 +121,5 @@ class Feature22Main(Resource):
             + 1.611 * feature_dir['7|CC-7|']
         )
 
-        return feature_dir
-        # return make_success_response(data={'level': _readability})
+        # return feature_dir
+        return make_success_response(data={'level': _readability})
