@@ -24,4 +24,10 @@ from utils.useForRussianInstance import RussianUtils
 from utils.useForSinhaleseInstance import SinhalaUtils
 from utils.useForSwedishInstance import SwedishUtils
 from utils.useForUklianInstance import UklianUtils
-
+from utils.useForGreekInstance import GreekUtils
+from utils.useForHebrewInstance import HebrewUtils
+from utils.useForHindiInstance import HindiUtils
+from utils.useForMalayInstance import MalayUtils
+from utils.useForPolishInstance import PolishUtils
+from utils.useForSerbianInstance import SerbianUtils
+from utils.useForUrduInstance import UrduUtils

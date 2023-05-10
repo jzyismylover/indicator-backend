@@ -1,5 +1,6 @@
-import abc
+import hanlp
 import torch
+import GPUtil
 from utils.hanlp import UNIVERSAL_HANLP as Hanlp
 from plugins._sentry import useSentryCaptureError, useSentryCaptureMessage
 
@@ -72,26 +73,35 @@ class BaseUtils(object):
         return [i for i in set(real_words)]
 
     # GET 分句列表
-    @abc.abstractmethod
     def get_sentences(self, text):
-        pass
-        
+        # 沿用 hanlp 多任务分词模型
+        SENTENCE_SPILIT = hanlp.load(hanlp.pretrained.eos.UD_CTB_EOS_MUL)
+        sentences = SENTENCE_SPILIT(text)
+        return sentences
+
     # GET 分词列表
     def get_words(self, sentences):
+        # 显存占用大的函数，应对此进行相关优化
         words = []
         tags = []
-        SENTENCES_LIMIT = 6  # 单次处理的句子数
+        SENTENCES_LIMIT = 5  # 单次处理的句子数
         i = 0
 
         while i < len(sentences):
             try:
+                Gpus = GPUtil.getGPUs()
+                gpu0 = Gpus[0]
+                if (gpu0.memoryUsed / gpu0.memoryTotal) > 0.6:
+                    useSentryCaptureMessage('显存使用率高于60%, 任务中断')
+                    raise MemoryError('GPU Memory usage bigger than 60 percent')
+
                 sentence = sentences[i : i + SENTENCES_LIMIT]
                 ans = Hanlp(sentence, tasks='ud')
                 words.extend([i for j in ans['tok'] for i in j])
                 tags.extend([i for j in ans['pos'] for i in j])
             except Exception as e:
+                print('hahahahahahaha')
                 if isinstance(e, MemoryError):
-                    useSentryCaptureMessage('当前显存溢出了需要重置')
                     torch.cuda.empty_cache()
                 useSentryCaptureError(e)
                 pass
