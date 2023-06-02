@@ -32,13 +32,7 @@ class GPUCheck(Resource):
         return make_success_response(ans)
 
 
-class HealthCheck(Resource):
-    def get(self):
-        return make_success_response('服务器运转正常')
-
-
 check_model = Blueprint('check', __name__, url_prefix='/check')
 check_api = Api(check_model)
-check_api.add_resource(HealthCheck, '/health')
 check_api.add_resource(DiskCheck, '/disk')
 check_api.add_resource(GPUCheck, '/gpu')

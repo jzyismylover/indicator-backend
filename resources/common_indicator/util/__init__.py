@@ -11,7 +11,7 @@ class CommonIndicatorHandler:
         self.handler = self.getHandler(lg_type)
         if requireSplit is False:
             # 传入词典文本
-            self.sentences = [] # 词典句子数默认为 0
+            self.sentences = [] # 默认词典不分句
             self.words = text.split(' ')
         else:
             # 传入原文本
@@ -33,6 +33,7 @@ class CommonIndicatorHandler:
     def handleTokenizen(self):
         return self.words
 
+    # 词性标注
     def handleSpeechTagging(self):
         if self.tags:
             return self.tags
@@ -45,12 +46,15 @@ class CommonIndicatorHandler:
 
         return word_tags
 
+    # 总词数
     def getTotalWords(self):
         return len(self.words)
 
+    # 词典数
     def getDictWords(self):
         return len(self.frequency)
 
+    # 单现词数
     def getHapaxWords(self):
         return len(self.hapax)
 
@@ -84,6 +88,7 @@ class CommonIndicatorHandler:
         self.h_value = h_value
         return h_value
 
+    # 熵
     def getEntroyValue(self):
         N = len(self.words)
         H = 0

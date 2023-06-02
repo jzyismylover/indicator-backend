@@ -2,7 +2,6 @@ from flask import Blueprint
 from flask_restful import Api
 from resources.en_readability.views import (
     ARI,
-    ARIGradeLevels,
     RIX,
     FlsechKincaidGrade,
     GunningFog,

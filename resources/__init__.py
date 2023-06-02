@@ -10,7 +10,7 @@ from resources.multitask import multitask_blueprint
 from resources.zh_readability import zh_readability_blueprint
 from resources.en_readability import readability_indicator
 
-
+# 注册 restful-api
 def init_views(app):
     app.register_blueprint(common_indicator)
     app.register_blueprint(readability_indicator)

@@ -1,8 +1,6 @@
 import os
 from celery import Celery
 from flask import Flask
-from plugins._sentry import useSentryCaptureError
-
 
 celery = Celery(
     os.environ['CELERY_NAME'],
@@ -25,7 +23,6 @@ def init_celery(app: Flask):
         
         def on_failure(self, exc, task_id, args, kwargs, einfo):
             print('异步任务运行失败')
-            useSentryCaptureError(exc)
             return super(ContextTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
 

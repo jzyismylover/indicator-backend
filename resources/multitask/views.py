@@ -52,9 +52,11 @@ def generateBinaryRawTextData(texts: list):
 
 
 # 设置定时任务，定时清除过期redis缓存处理数据
-@scheduler.task('cron', id='clear_redis', hour='*/3')
+@scheduler.task('cron', id='clear_redis', hour='*/2')
 def clear_redis_cache():
-    _now_day = time.gmtime().tm_mday
+    _now = time.gmtime()
+    _now = f'{_now.tm_year}-{_now.tm_mon}-{_now.tm_mday}'
+    _now = datetime.strptime(_now, '%Y-%m-%d')
     with engine.connect() as conn:
         stmt = (
             select(Task)
@@ -62,8 +64,9 @@ def clear_redis_cache():
         taskLists = list(conn.execute(stmt))
     with engine.begin() as conn:
         for _ in taskLists:
-              _pre_day = datetime.strptime(_.update_time, '%Y-%m-%d').day
-              if _now_day - _pre_day >= 1:
+              _pre = datetime.strptime(_.update_time, '%Y-%m-%d')
+              _time = _now - _pre
+              if _time.days >= 1:
                 stmt = delete(Task).where(Task.id == _.id)
                 conn.execute(stmt)
 
@@ -131,8 +134,8 @@ class MultiProcessCommonIndicator(Resource):
                 'filename': file.filename,
                 'content_type': file.content_type,
                 'content_length': file.content_length,
+                # 先将二进制表示为十六进制码
                 'data': file.read().hex()
-                # 'data': file.read()
             }
             files.append(json.dumps(data))
         files = json.dumps(files)
@@ -176,7 +179,7 @@ class GetTaskLists(Resource):
             results = conn.execute(select(Task).where(Task.user_id == user_id))
             results = list(results)
         
-        # celery 任务默认有效时间为 24 hour
+        # celery 任务默认有效时间为 24 hour(可在 config/_celery自定义)
         ans = []
         for _ in results:
             info = parse_files.AsyncResult(_.id)
@@ -208,8 +211,8 @@ class DownloadTask(Resource):
         return fv
 
 
+# 导出分词处理结果词典
 class DownloadTaskDirectory(Resource):
-    # 导出分词处理结果词典(空格形式分隔)
     @check_premission
     def post(self, info):
         id = request.form['id']

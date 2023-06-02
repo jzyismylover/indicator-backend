@@ -15,7 +15,7 @@
       "module": "flask",
       "env": {
         "FLASK_APP": "setup.py",
-        "FLASK_DEBUG": "true"
+        "FLASK_DEBUG": "false"
       },
       "args": [
         "run",

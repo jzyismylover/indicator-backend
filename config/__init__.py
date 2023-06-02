@@ -30,7 +30,6 @@ def set_configuration(prefix: str, config: dict):
         os.environ[key] = str(val)
 
 init_enviro()
-# os.environ['HANLP_LOAD'] = 'True'
 
 from config.db import init_db
 from config.redis import init_redis, mark_dyn_data, get_dyn_data

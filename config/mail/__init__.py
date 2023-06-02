@@ -26,7 +26,7 @@ def sendCaptcha(email: str):
         captcha = str(uuid.uuid4().hex)[:6]
         mark_dyn_data(email, {'update_time': time.time(), 'code': captcha})
 
-        message = Message(subject='邮件发送', body=f'验证码：{captcha}', recipients=[email])
+        message = Message(subject='多语种计量指标提取软件账号注册', body=f'验证码：{captcha}', recipients=[email])
         mail.send(message)
         return {
             'message': '验证码发送成功'

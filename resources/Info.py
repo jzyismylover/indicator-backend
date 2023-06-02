@@ -1,4 +1,3 @@
-# 获取个人信息接口
 from flask import Blueprint
 from flask_restful import Resource, reqparse, Api
 from config.db import engine
@@ -9,7 +8,7 @@ from utils.jwt import check_premission
 from utils.json_response import make_success_response, make_error_response
 from utils.jwt.generateHash import generate_hash_password
 
-
+# 获取用户信息
 class GetUserInfo(Resource):
     @check_premission
     def get(self, info):
@@ -19,7 +18,7 @@ class GetUserInfo(Resource):
 
         return make_success_response({'username': rows.username, 'email': rows.email})
 
-
+# 更新用户信息
 class UpdateUserInfo(Resource):
     @check_premission
     def put(self, info):
@@ -50,7 +49,7 @@ class UpdateUserInfo(Resource):
 
         return make_success_response(msg='success')
 
-
+# 更新密码
 class UpdateUserPassword(Resource):
     @check_premission
     def put(self, info):

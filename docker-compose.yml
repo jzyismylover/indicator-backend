@@ -1,15 +1,22 @@
 version: '3'
 services:
+  # flask
   ocr:
     image: 172.16.234.200/server_app/indicator-backend-ocr:latest
     ports:
-      - 25001:5000
+      - 5000:5000
     environment:
       - MYSQL_HOSTNAME=172.16.234.200
       - MYSQL_PORT=3306
       - MYSQL_USERNAME=indicator
       - MYSQL_PASSWORD=MYSQL_indicator
       - MYSQL_DBNAME=indicator
+      # 单个进程GPU占用比例（不算上模型）
+      # 假如服务器GPU总显存为48G，那么单个进程占用的就是 48 * 0.2 = 9.6G
+      # 基于pytorch/set_per_process_memory_fraction
+      - GPU_THRESHOLD=0.05
+    depends_on:
+      - redis
   redis:
     image: redis:alpine
     command:
@@ -18,3 +25,14 @@ services:
     image: 172.16.234.200/server_app/indicator-extraction-tool
     ports:
       - 25002:80
+  # celery
+  worker:
+    image: 172.16.234.200/server_app/indicator-backend-ocr:latest
+    command: celery -A setup.celery worker -l info -c 2
+    environment:
+      - MYSQL_HOSTNAME=172.16.234.200
+      - MYSQL_PORT=3306
+      - MYSQL_USERNAME=indicator
+      - MYSQL_PASSWORD=MYSQL_indicator
+      - MYSQL_DBNAME=indicator
+      - GPU_THRESHOLD=0.05
