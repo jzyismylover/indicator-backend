@@ -29,3 +29,4 @@ torch==1.13.1
 SQLAlchemy==1.4.45
 celery==5.2.7
 openpyxl
+indic-nlp-library

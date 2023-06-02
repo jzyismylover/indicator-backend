@@ -1,6 +1,6 @@
 {
   "python.defaultInterpreterPath": "/home/jzy/miniconda3/envs/flask/bin/python",
-  "python.analysis.extraPaths": ["/home/jzy/miniconda3/envs/flask/bin/python"]
+  "python.analysis.extraPaths": ["/home/jzy/miniconda3/envs/flask/lib/python3.7/site-packages"]
   // "code-runner.executorMap": {
   //   "python": "E://Anaconda//envs//flask//python.exe -u",
   // },
