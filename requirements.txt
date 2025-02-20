@@ -1,7 +1,6 @@
 flask
 flask-cors
 flask-restful
-flask-sqlalchemy
 flask-redis
 pymysqldb
 gunicorn
@@ -22,3 +21,12 @@ sentry-sdk[flask]
 psutil
 GPUtil
 flask_mail
+importlib-metadata==4.13.0
+xlrd==1.2.0
+unidecode
+Flask-APScheduler
+torch==1.13.1
+SQLAlchemy==1.4.45
+celery==5.2.7
+openpyxl
+indic-nlp-library

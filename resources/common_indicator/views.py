@@ -1,16 +1,18 @@
 import hashlib
-from flask_restful import Resource, reqparse, abort, inputs
-from config import get_dyn_data, mark_dyn_data
+import uuid
+from openpyxl import Workbook
+from io import BytesIO
+from flask import send_file
+from flask_restful import Resource, reqparse, abort, inputs, request
+from config.redis import get_dyn_data, mark_dyn_data, delete_dyn_data
 from resources.common_indicator.util import *
 from utils.jwt import check_premission
-from utils.json_response import make_error_response
+from utils.json_response import make_error_response, make_success_response
 
 parser = reqparse.RequestParser()
-# actually it must be application/json
-parser.add_argument('list', location='form')
 parser.add_argument('lg_type', type=str, location='form')
 parser.add_argument('lg_text', type=str, location='form')
-parser.add_argument('isSplitingText', type=inputs.boolean, location='form')
+parser.add_argument('requireSplit', type=inputs.boolean, location='form')
 
 
 # 文本hash散列函数
@@ -21,9 +23,8 @@ def generateHash(text: str):
 
 
 def getParams(parser=parser, id=None, use_redis=True) -> CommonIndicatorHandler:
-    def getParamsHandler(lg_text, lg_type, id, isSplitingText=False):
+    def getParamsHandler(lg_text, lg_type, id, requireSplit=False):
         hash_value = generateHash(lg_type + lg_text)
-        # replace some \n | \r\b | \\n chars
         lg_text = lg_text.strip().replace('\n', '').replace('\r', '').replace('\\n', '')
         handler = getLanguageHandler(
             lg_text,
@@ -31,51 +32,51 @@ def getParams(parser=parser, id=None, use_redis=True) -> CommonIndicatorHandler:
             id,
             hash_value=hash_value,
             use_redis=use_redis,
-            isSplitingText=isSplitingText,
+            requireSplit=requireSplit,
         )
         return handler
 
-    # params = request.get_json()
     params = parser.parse_args()
-    if params['isSplitingText'] is None:
-        isSplitingText = False
+    
+    # 区分传入的是词典还是原文本
+    # requireSplit
+    # - true: 需要使用分词工具进行相应策略处理
+    # - false: 默认按空格分词
+    if params['requireSplit'] is None:
+        requireSplit = False
     else:
-        isSplitingText = params['isSplitingText']
-    # 兼容单文本传入
-    if params['list'] is None:
-        params = parser.parse_args()
-        lg_type = params['lg_type']
-        lg_text = params['lg_text']
-        # invalid empty content
-        if lg_text is '':
-            return abort(400, **make_error_response(msg='内容为空'))
-        handler = getParamsHandler(lg_text, lg_type, id, isSplitingText)
-        return handler
-    # 多文本传入
-    else:
-        lists = params['list']
-        handlers = []
-        for item in lists:
-            handler = getParamsHandler(
-                item['lg_text'], item['lg_type'], id, isSplitingText
-            )
-            handlers.append(handler)
-        return handlers
+        requireSplit = params['requireSplit']
+
+    params = parser.parse_args()
+    lg_type = params['lg_type']
+    lg_text = params['lg_text']
+
+    if lg_text is '':
+        return abort(400, **make_error_response(msg='内容为空'))
+    handler = getParamsHandler(lg_text, lg_type, id, requireSplit)
+    return handler
 
 
 def getLanguageHandler(
-    lg_text, lg_type, id, *, hash_value='', use_redis, isSplitingText
+    lg_text, lg_type, id, *, hash_value='', use_redis, requireSplit
 ):
     if use_redis is False:
-        return CommonIndicatorHandler(text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText)
+        return CommonIndicatorHandler(
+            text=lg_text, lg_type=lg_type, requireSplit=requireSplit
+        )
+    
+    # redis存储{key: [文本hash], value: [文本处理结果] }，以免重复处理文本
     try:
-        # connect error redis
         handler = get_dyn_data(hash_value)
         if handler == None:
-            handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText)
+            handler = CommonIndicatorHandler(
+                text=lg_text, lg_type=lg_type, requireSplit=requireSplit
+            )
             mark_dyn_data(hash_value, handler)
-    except Exception as e:
-        handler = CommonIndicatorHandler(text=lg_text, lg_type=lg_type, isSplitingText=isSplitingText)
+    except Exception as e: # 捕获 redis 未正常启动
+        handler = CommonIndicatorHandler(
+            text=lg_text, lg_type=lg_type, requireSplit=requireSplit
+        )
 
     return handler
 
@@ -99,7 +100,7 @@ class SpeechTagging(Resource):
 
 
 """
-具体指标计算视图
+通用指标计算接口
 """
 
 
@@ -350,30 +351,78 @@ class ALLCommonIndicator(Resource):
 
         end_time = datetime.datetime.now()
         print(f'parser time ${end_time - start_time}')
+        
 
-        return {
-            'data': {
-                'Words(总词数)': len(handler.words),
-                'Dicts(词典数)': len(handler.frequency),
-                # 'HapaxWords(单现词数)': len(handler.hapax),
-                'Hapax Percentage(单现词比例)': len(handler.hapax) / len(handler.words),
-                'TTR(型例比)': handler.getTTRValue(),
-                'HPoint(h点)': h,
-                'Entropy(文本熵)': handler.getEntroyValue(),
-                'R1(词汇丰富度)': handler.getR1Value(),
-                'RR(重复率)': handler.getRRValue(),
-                'RRmc(相对重复率)': handler.getRRmcValue(),
-                'TC(主题集中度)': handler.getTCValue(),
-                'SecondTc(次级主题集中度)': handler.getSecondTCValue(),
-                'Activity(活动度)': Activity,
-                'Descriptivity(描写度)': 1 - Activity,
-                'L(文本中词的秩序分布欧氏距离)': handler.getLValue(),
-                'Curver Length R Index(文本中词的秩序分布R指数)': handler.getCurveLengthValue(),
-                'Lambda(文本Lambda值)': handler.getLambdaValue(),
-                'G(基尼系数)': G,
-                'R4(基尼系数补数)': 1 - G,
-                'Writer\'s View(作者视野)': handler.getWriterView(),
-                'Verb Distances(动词间距)': handler.getVerbDistance(),
-                #'Zipf Test': handler.getZipf(),
-            }
+        data = {
+            'Words(总词数)': len(handler.words),
+            'Dicts(词典数)': len(handler.frequency),
+            # 'HapaxWords(单现词数)': len(handler.hapax),
+            'Hapax Percentage(单现词比例)': len(handler.hapax) / len(handler.words),
+            'TTR(型例比)': handler.getTTRValue(),
+            'HPoint(h点)': h,
+            'Entropy(文本熵)': handler.getEntroyValue(),
+            'R1(词汇丰富度)': handler.getR1Value(),
+            'RR(重复率)': handler.getRRValue(),
+            'RRmc(相对重复率)': handler.getRRmcValue(),
+            'TC(主题集中度)': handler.getTCValue(),
+            'SecondTc(次级主题集中度)': handler.getSecondTCValue(),
+            'Activity(活动度)': Activity,
+            'Descriptivity(描写度)': 1 - Activity,
+            'L(文本中词的秩序分布欧氏距离)': handler.getLValue(),
+            'Curver Length R Index(文本中词的秩序分布R指数)': handler.getCurveLengthValue(),
+            'Lambda(文本Lambda值)': handler.getLambdaValue(),
+            'G(基尼系数)': G,
+            'R4(基尼系数补数)': 1 - G,
+            'Writer\'s View(作者视野)': handler.getWriterView(),
+            'Verb Distances(动词间距)': handler.getVerbDistance(),
         }
+        hash_id = uuid.uuid4().__repr__()[6:-3]
+        mark_dyn_data(hash_id, data)
+        data['hash_value'] = hash_id
+
+        return make_success_response(data=data)
+
+# 计算结果导出excel
+class DownloadIndicatorsIntoExcel(Resource):
+    @check_premission
+    def post(self, info):
+        if 'hash_value' not in request.form:
+            return make_error_response(msg='hash_value is not is required'), 400
+        hash_value = request.form['hash_value']
+        data = get_dyn_data(hash_value)
+
+        wb = Workbook()
+        ws = wb.active
+        ws['A1'] = '指标名'
+        ws['B1'] = '指标值'
+
+        i = 2
+        for row in data.keys():
+            if row == 'hash_value':
+                continue
+            ws.cell(row=i, column=1).value = row
+            ws.cell(row=i, column=2).value = data[row]
+            i += 1
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        print("{} b".format(len(output.getvalue())))
+
+        fv = send_file(
+            output,
+            download_name='indicator.xlsx',
+            as_attachment=True,
+            conditional=True,
+        )
+
+        return fv
+
+class DeleteIndicatorExcelHashCache(Resource):
+    @check_premission
+    def delete(self, info):
+        if 'hash_value' not in request.form:
+            return make_error_response(msg='hash_value param is required'), 400
+        hash_value = request.form['hasg_value']
+        delete_dyn_data(hash_value)

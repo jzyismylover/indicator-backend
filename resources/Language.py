@@ -64,6 +64,7 @@ class LanguageRec(Resource):
         """
         return bytes(file.read()).decode().replace('\n', '').strip()
 
+    # 存储用户操作历史
     def mark_history(self, id, type, text):
         with engine.connect() as conn:
             conn.execute(
@@ -71,7 +72,7 @@ class LanguageRec(Resource):
                 [{'content': text, 'type': type, 'user_id': id}],
             )
             conn.commit()
-
+    
     def parse_file(self, file):
         dir_name = file.filename.split('.')[1]
         if dir_name == 'pdf':
@@ -91,10 +92,12 @@ class LanguageRec(Resource):
         ans = None
         text = self.parser.parse_args()['text']
         if text is not None:
+            # 基于文本进行语种识别
             _type = self.get_text_lg_type(text)
             self.mark_history(info['user_id'], _type, text)
             return make_success_response(self.return_lg_type(_type, text))
         else:
+            # 基于文件进行语种识别
             ans = []
             files = request.files.getlist('file')
             for file in files:

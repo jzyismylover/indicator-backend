@@ -31,7 +31,6 @@ login_parser.add_argument('password', required=True, location='form')
 class UsernameBasedLogin(Resource):
     def post(self):
         params = login_parser.parse_args()
-        # username unique / so the following results length assert equal to 1
         username, password = params['username'], generate_hash_password(
             params['password']
         )

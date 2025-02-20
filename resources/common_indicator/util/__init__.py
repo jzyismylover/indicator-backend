@@ -7,16 +7,14 @@ from resources.constant import LANGUAGE_HANDLER_MAPPER
 
 
 class CommonIndicatorHandler:
-    def __init__(self, text, lg_type, isSplitingText=True) -> None:
+    def __init__(self, text, lg_type, requireSplit=True) -> None:
         self.handler = self.getHandler(lg_type)
-        if isSplitingText:
-            self.sentences = text.split(' ')
-            # 中英文不依赖hanlp多任务词性标注
-            if lg_type == 'zh' or lg_type == 'en':
-                self.words = self.sentences
-            else:
-                self.words = self.handler.get_words(self.sentences)
+        if requireSplit is False:
+            # 传入词典文本
+            self.sentences = [] # 默认词典不分句
+            self.words = text.split(' ')
         else:
+            # 传入原文本
             self.sentences = self.handler.get_sentences(text)
             self.words = self.handler.get_words(self.sentences)
 
@@ -35,6 +33,7 @@ class CommonIndicatorHandler:
     def handleTokenizen(self):
         return self.words
 
+    # 词性标注
     def handleSpeechTagging(self):
         if self.tags:
             return self.tags
@@ -47,12 +46,15 @@ class CommonIndicatorHandler:
 
         return word_tags
 
+    # 总词数
     def getTotalWords(self):
         return len(self.words)
 
+    # 词典数
     def getDictWords(self):
         return len(self.frequency)
 
+    # 单现词数
     def getHapaxWords(self):
         return len(self.hapax)
 
@@ -86,6 +88,7 @@ class CommonIndicatorHandler:
         self.h_value = h_value
         return h_value
 
+    # 熵
     def getEntroyValue(self):
         N = len(self.words)
         H = 0
@@ -124,6 +127,9 @@ class CommonIndicatorHandler:
     def getRRmcValue(self):
         RR = self.getRRValue()
         V = len(self.frequency)
+        division = 1 - 1 / math.sqrt(V)
+        if division == 0:
+            return 0
         RRmc = (1 - math.sqrt(RR)) / (1 - 1 / math.sqrt(V))
 
         return RRmc
@@ -220,12 +226,17 @@ class CommonIndicatorHandler:
         if self.h_value == 0:
             self.getHPoint()
 
+        h = self.h_value
         for i in range(0, len(f) - 1):
             distance = (f[i] - f[i + 1]) ** 2
-            if i + 1 < self.h_value:
-                LR += math.sqrt(distance + 1)
+            _deviation = (h - f[math.ceil(h)]) ** 2 + (h - math.ceil(h)) ** 2
+            if i + 1 < h:
+                LR = LR +  math.sqrt(distance + 1) + math.sqrt(_deviation)
             L += math.sqrt(distance + 1)
 
+        division = L
+        if division == 0:
+            return 1
         R = 1 - LR / L
 
         return R

@@ -28,6 +28,6 @@ def German_syllables_count(word):
     return count
 
 # 测试代码
-print(German_syllables_count("Haus"))  # 1
-print(German_syllables_count("Auto"))  # 2
-print(German_syllables_count("Küche"))  # 2
+# print(German_syllables_count("Haus"))  # 1
+# print(German_syllables_count("Auto"))  # 2
+# print(German_syllables_count("Küche"))  # 2

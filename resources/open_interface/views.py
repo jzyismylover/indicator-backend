@@ -3,7 +3,7 @@ import functools
 from sqlalchemy.orm import Session
 from sqlalchemy import select, and_, update
 from flask_restful import Resource, reqparse, request
-from utils.jwt import check_premission
+from utils.jwt import check_premission, verify_token
 from utils.jwt.generateHash import generate_hash_password
 from utils.jwt.generateAppid import generate_app_id
 from utils.json_response import make_error_response, make_success_response
@@ -11,7 +11,7 @@ from config.db import engine
 from config.db.user import User
 from resources.Language import LanguageRec, LAN_MAPPER
 from resources.common_indicator.util import CommonIndicatorHandler
-from resources.readability_indicator.util import Readability
+from resources.en_readability.util import Readability
 from resources.constant import (
     COMMON_INDICATOR_HANDLER_MAPPING,
     READABILITY_INDICATOR_HANDLER_MAPPING,
@@ -24,6 +24,14 @@ language_ins = LanguageRec()
 def check_app_id(fn):
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
+        # if token exists, do not need to verify the appid
+        headers = request.headers
+        if 'HTTP_AUTHORIZATION' in headers.environ:
+            token = headers.environ['HTTP_AUTHORIZATION'][7:]
+            auth = verify_token(token)
+            if auth['status'] == 200:
+                return fn(*args, **kwargs)
+                
         if 'appid' not in request.form:
             return make_error_response(msg='missing appid'), 400
         appid = request.form['appid']
@@ -73,10 +81,31 @@ class GetAppid(Resource):
             stmt = select(User).where(User.id == info['user_id'])
             row = session.scalars(stmt).first()
 
-        return make_success_response(data={'appid': row.appid})
+        if row is None:
+            appid = None
+        else:
+            appid = row.appid
+
+        return make_success_response(data={'appid': appid})
 
 
 class CommonIndicatorsOpenApi(Resource):
+    def __init__(self) -> None:
+        self.files = request.files.getlist('files')
+        params = request.form
+        if 'indicators' not in params:
+            self.indicators = COMMON_INDICATOR_HANDLER_MAPPING.keys()
+        else:
+            self.indicators = params['indicators'].split(',')
+        if 'requireSplit' not in params:  # 默认执行分句分词
+            self.requireSplit = False
+        else:
+            self.requireSplit = self.get_bool_from_form(params['requireSplit'])
+        if 'cumulatives' not in params:
+            self.cumulatives = self.indicators
+        else:
+            self.cumulatives = params['cumulatives'].split(',')
+
     def get_bool_from_form(self, val):
         if val == 'false':
             return False
@@ -99,35 +128,19 @@ class CommonIndicatorsOpenApi(Resource):
     ):
         cumulative_model.tags.extend(model.tags)
 
-    @check_app_id
-    def post(self):
-        files = request.files.getlist('files')
-        params = request.form
-        if 'indicators' not in params:
-            indicators = COMMON_INDICATOR_HANDLER_MAPPING.keys()
-        else:
-            indicators = params['indicators'].split(',')
-        if 'isSplitingText' not in params:  # 默认执行分句分词
-            isSplitingText = False
-        else:
-            isSplitingText = self.get_bool_from_form(params['isSplitingText'])
-        if 'cumulatives' not in params:
-            cumulatives = indicators
-        else:
-            cumulatives = params['cumulatives'].split(',')
-
+    def calculate(self):
         results = []
         base_lg_type = None
         models = []
 
-        for file in files:
+        for file in self.files:
             lg_type, content = language_ins.parse_file(file)
             base_lg_type = lg_type
-            model = CommonIndicatorHandler(content, lg_type, isSplitingText)
+            model = CommonIndicatorHandler(content, lg_type, self.requireSplit)
             models.append(model)
             ans = dict()
             ans['filename'] = file.filename
-            for _ in indicators:
+            for _ in self.indicators:
                 if _ not in COMMON_INDICATOR_HANDLER_MAPPING:
                     continue
                 func = getattr(model, COMMON_INDICATOR_HANDLER_MAPPING[_], None)
@@ -139,7 +152,7 @@ class CommonIndicatorsOpenApi(Resource):
 
         # 增量指标
         culmulative_dic = dict()
-        if len(cumulatives) > 0:
+        if len(self.cumulatives) > 0:
             model = CommonIndicatorHandler('', base_lg_type)
             model.words.pop()
             for mdl in models:
@@ -148,12 +161,22 @@ class CommonIndicatorsOpenApi(Resource):
 
             self.culmulateFrequency(model)
 
-            for _ in cumulatives:
+            for _ in self.cumulatives:
                 if _ in CUMYLATIVE_INDICATORS:
                     culmulative_dic[_] = getattr(
                         model, COMMON_INDICATOR_HANDLER_MAPPING[_], None
                     )()
+        
+        return {
+            'results': results,
+            'culmulative_dic': culmulative_dic
+        }
 
+    @check_app_id
+    def post(self):
+        ans = self.calculate()
+        results = ans['results']
+        culmulative_dic = ans['culmulative_dic']
         return make_success_response(
             data={
                 'directory_indicators': results,

@@ -1,6 +1,5 @@
 from flask_restful import Api
 from flask import Blueprint
-from utils.jwt import check_premission
 from resources.common_indicator.views import (
     TotalWords,
     DictWords,
@@ -27,6 +26,8 @@ from resources.common_indicator.views import (
     RRValue,
     SecondaryTCValue,
     ALLCommonIndicator,
+    DownloadIndicatorsIntoExcel,
+    DeleteIndicatorExcelHashCache,
 )
 
 common_indicator = Blueprint('common', __name__, url_prefix='/common')
@@ -59,3 +60,5 @@ common_api.add_resource(HapaxValue, '/hapax')
 common_api.add_resource(WriterView, '/writerView')
 common_api.add_resource(VerbDistance, '/verbDistance')
 common_api.add_resource(ALLCommonIndicator, '/all')
+common_api.add_resource(DownloadIndicatorsIntoExcel, '/download')
+common_api.add_resource(DeleteIndicatorExcelHashCache, '/delete/hash')

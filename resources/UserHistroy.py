@@ -54,7 +54,6 @@ class UserHistory(Resource):
         parser.add_argument('history_id', required=True, location='form')
         params = parser.parse_args()
 
-        # print(request.form['history_id'])
         history_id = [int(id) for id in params['history_id'].split(',')]
         for item in history_id:
           deleteHistory(item, info['user_id'])

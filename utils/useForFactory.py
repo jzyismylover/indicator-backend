@@ -1,7 +1,56 @@
-import abc
-import numpy as np
+import re
+import os
+import torch
+from hanlp.utils.torch_util import gpus_available
 from utils.hanlp import UNIVERSAL_HANLP as Hanlp
-from sentry_sdk import capture_exception
+
+# 设置 pytorch占用显存
+if os.path.exists('/.dockerenv'):
+    gpu_memory_fraction = float(os.environ['GPU_THRESHOLD'])
+else:
+    gpu_memory_fraction = 0.5
+if gpus_available():
+    torch.cuda.empty_cache()
+    torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction, 0)
+
+
+# 通用分句规则
+_SEPARATOR = r'@'
+_RE_SENTENCE = re.compile(r'(\S.+?[.!?])(?=\s+|$)|(\S.+?)(?=[\n]|$)', re.UNICODE)
+_AB_SENIOR = re.compile(r'([A-Z][a-z]{1,2}\.)\s(\w)', re.UNICODE)
+_AB_ACRONYM = re.compile(r'(\.[a-zA-Z]\.)\s(\w)', re.UNICODE)
+_UNDO_AB_SENIOR = re.compile(r'([A-Z][a-z]{1,2}\.)' + _SEPARATOR + r'(\w)', re.UNICODE)
+_UNDO_AB_ACRONYM = re.compile(r'(\.[a-zA-Z]\.)' + _SEPARATOR + r'(\w)', re.UNICODE)
+
+
+def _replace_with_separator(text, separator, regexs):
+    replacement = r"\1" + separator + r"\2"
+    result = text
+    for regex in regexs:
+        result = regex.sub(replacement, result)
+    return result
+
+
+def split_sentence(text, best=True):
+    text = re.sub(r'([。！？?])([^”’])', r"\1\n\2", text)
+    text = re.sub(r'(\.{6})([^”’])', r"\1\n\2", text)
+    text = re.sub(r'(…{2})([^”’])', r"\1\n\2", text)
+    text = re.sub(r'([。！？?][”’])([^，。！？?])', r'\1\n\2', text)
+    for chunk in text.split("\n"):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        if not best:
+            yield chunk
+            continue
+        processed = _replace_with_separator(chunk, _SEPARATOR, [_AB_SENIOR, _AB_ACRONYM])
+        sents = list(_RE_SENTENCE.finditer(processed))
+        if not sents:
+            yield chunk
+            continue
+        for sentence in sents:
+            sentence = _replace_with_separator(sentence.group(), r" ", [_UNDO_AB_SENIOR, _UNDO_AB_ACRONYM])
+            yield sentence
 
 
 class BaseUtils(object):
@@ -73,25 +122,40 @@ class BaseUtils(object):
         return [i for i in set(real_words)]
 
     # GET 分句列表
-    @abc.abstractmethod
     def get_sentences(self, text):
-        pass
-        
+        # 沿用 hanlp 多任务分词模型
+        sentences = [sentence for sentence in split_sentence(text)]
+        return sentences
+
     # GET 分词列表
     def get_words(self, sentences):
+        # 显存占用大的函数，应对此进行相关优化
         words = []
         tags = []
-        SENTENCES_LIMIT = 6  # 单次处理的句子数
+        SENTENCES_LIMIT = 5  # 单次处理的句子数
         i = 0
 
         while i < len(sentences):
             try:
+                # Gpus = GPUtil.getGPUs()
+                # gpu0 = Gpus[0]
+                # if (gpu0.memoryUsed / gpu0.memoryTotal) > 0.55:
+                #     useSentryCaptureMessage('显存使用率高于60%, 任务中断')
+                #     raise MemoryError('GPU Memory usage bigger than 60 percent')
+                # def transform_bytes_to_gb(val):
+                #     return val / 1024 / 1024 / 1024
+                # print(transform_bytes_to_gb(torch.cuda.memory_allocated()))
+                # print(transform_bytes_to_gb(torch.cuda.memory_cached()))
+                # print(transform_bytes_to_gb(torch.cuda.max_memory_allocated()))
+                # print(torch.cuda.memory_summary())
+
                 sentence = sentences[i : i + SENTENCES_LIMIT]
                 ans = Hanlp(sentence, tasks='ud')
                 words.extend([i for j in ans['tok'] for i in j])
                 tags.extend([i for j in ans['pos'] for i in j])
             except Exception as e:
-                capture_exception(e)
+                if isinstance(e, MemoryError):
+                    torch.cuda.empty_cache()
                 pass
             finally:
                 i = i + SENTENCES_LIMIT

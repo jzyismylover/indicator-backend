@@ -3,12 +3,13 @@ import jieba
 import os
 import re
 from zhconv import convert
-from pyltp import Postagger
+from pyltp import Postagger, Segmentor
 from utils.useForFactory import BaseUtils
 from utils.constant import ZH_SPECIAL_WORDS as SYMBOLS
 
 LTP_DATA_DIR = os.path.join('static', 'ltp_data_v3.4.0')
 POS_MODEL_PATH = os.path.join(LTP_DATA_DIR, 'pos.model')
+CWS_MODEL_PATH = os.path.join(LTP_DATA_DIR, 'cws.model')
 
 class ZHUtils(BaseUtils):
     def get_sentences(self, text):

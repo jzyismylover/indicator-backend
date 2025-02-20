@@ -18,6 +18,6 @@ def Italian_syllables_count(word):
     return count
 
 # 测试代码
-print(Italian_syllables_count("casa"))  # 2
-print(Italian_syllables_count("cosa"))  # 2
-print(Italian_syllables_count("cucina"))  # 3
+# print(Italian_syllables_count("casa"))  # 2
+# print(Italian_syllables_count("cosa"))  # 2
+# print(Italian_syllables_count("cucina"))  # 3
